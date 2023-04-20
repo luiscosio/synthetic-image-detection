@@ -1,3 +1,6 @@
 [submodule "detectors/GAN-image-detection"]
 	path = detectors/GAN_image_detection
 	url = git@github.com:tunasoup/GAN-image-detection.git
+[submodule "detectors/CNNDetection"]
+	path = detectors/CNNDetection
+	url = git@github.com:tunasoup/CNNDetection.git
