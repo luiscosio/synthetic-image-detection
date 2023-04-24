@@ -36,12 +36,13 @@ class ImageDataset(Dataset):
         return len(self._images)
 
     def __getitem__(self, idx):
-        img = self._images[idx]
-        img = Image.open(img)
-        img = transforms.PILToTensor()(img)
+        img_path = self._images[idx]
+        img_name = img_path.name
+        img = Image.open(img_path)
+        img = transforms.ToTensor()(img)  # (C x H x W)
         #if self._transform:
         #    img = self._transform(img)
-        return img
+        return img, img_name
 
 
 def create_csv(images: List, label: int, csv_path: Path) -> None:
@@ -77,6 +78,6 @@ def get_dataloader(data_dir: Path, label: int, csv_path: Path, transform=None, b
         Dataloader for the given directory
     """
     dataset = ImageDataset(data_dir, label, csv_path, transform=transform)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
     return dataloader
 
