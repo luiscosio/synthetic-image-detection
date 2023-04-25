@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Dict, NamedTuple, Protocol, Type
 
 import torch
+from tqdm import tqdm
 
 from dataset import get_dataloader
 from detectors.CNNDetection import Detector as CNNDetector
@@ -60,23 +61,24 @@ def main():
 
     data_dir = Path("data", dataset_id, dataset_subfolder)
     csv_path = Path("csvs", f"{dataset_id}.csv")
+    csv_print = f" and creating a csv in {csv_path}" if not csv_path.exists() else ""
 
-    print(f"Loading dataset {data_dir} and creating a csv in {csv_path}...")
-    dataloader = get_dataloader(data_dir, label=label, csv_path=csv_path, batch_size=3)
+    print(f"Loading dataset {data_dir}{csv_print}...")
+    dataloader = get_dataloader(data_dir, label=label, csv_path=csv_path, batch_size=1)
     results = []
 
     print("Running detector...")
-    for (images, names) in dataloader:
+    for (images, names) in tqdm(dataloader):
         with torch.no_grad():
             images = images.contiguous().to(device=device)
             batch_labels, batch_scores = detector(images)
             results.extend(batch_labels.flatten().tolist())
-            print(batch_scores)
+            #print(batch_scores)
 
     if verbose:
         print(f"Number of images: {len(results)}")
-        print(f"Number of fake images: {sum(results)}")
-        print(results)
+        print(f"Number of alleged fake images: {sum(results)}")
+        #print(results)
 
     print("Saving results to csv...")
     add_results_to_csv(csv_path, detector_id, results)
