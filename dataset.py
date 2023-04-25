@@ -38,7 +38,7 @@ class ImageDataset(Dataset):
     def __getitem__(self, idx):
         img_path = self._images[idx]
         img_name = img_path.name
-        img = Image.open(img_path)
+        img = Image.open(img_path).convert("RGB")
         img = transforms.ToTensor()(img)  # (C x H x W)
         #if self._transform:
         #    img = self._transform(img)
@@ -61,6 +61,11 @@ def get_dataloader(data_dir: Path, label: int, csv_path: Path, transform=None, b
         Dataloader for the given directory
     """
     dataset = ImageDataset(data_dir, label, csv_path, transform=transform)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    dataloader = DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers,
+    )
     return dataloader
 
