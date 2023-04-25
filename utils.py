@@ -22,7 +22,7 @@ def create_dataset_csv(images: List, label: int, csv_path: Path, sep: str = ",")
     return None
 
 
-def add_results_to_csv(csv_path: Path, detector_id: str, results: List, sep: str = ",") -> None:
+def add_results_to_csv(csv_path: Path, detector_id: str, results: List, scores: List, sep: str = ",") -> None:
     """
     Add or overwrite the results of a detector to a dataset csv file.
 
@@ -30,9 +30,11 @@ def add_results_to_csv(csv_path: Path, detector_id: str, results: List, sep: str
         csv_path: Path to the csv file
         detector_id: ID of the detector
         results: List of labels with the same length as the dataset
+        scores: List of scores with the same length as the dataset
         sep: Separator for the csv file
     """
     df = pd.read_csv(csv_path, sep=sep)
-    df[detector_id] = results
+    df[f"{detector_id}_labels"] = results
+    df[f"{detector_id}_scores"] = scores
     df.to_csv(csv_path, index=False, sep=sep)
     return None
