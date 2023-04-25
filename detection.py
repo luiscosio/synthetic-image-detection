@@ -5,7 +5,7 @@ import pandas as pd
 import torch
 
 from dataset import get_dataloader
-# from detectors.GAN_image_detection import Detector as EnsembleDetector
+from detectors.GAN_image_detection import Detector as EnsembleDetector
 from detectors.CNNDetection import Detector as CNNDetector
 
 torch.manual_seed(42)
@@ -13,6 +13,7 @@ torch.manual_seed(42)
 
 class Detector(Protocol):
     def load_pretrained(self, weights_path: Path) -> None: ...
+    def configure(self, device: str, training: bool, **kwargs) -> None: ...
 
 
 class DetectorTuple(NamedTuple):
@@ -23,7 +24,7 @@ class DetectorTuple(NamedTuple):
 WEIGHTS = Path("weights")
 DETECTORS: Dict[str, DetectorTuple] = {
     "CNNDetector": DetectorTuple(CNNDetector, WEIGHTS.joinpath("CNNDetector", "blur_jpg_prob0.5.pth")),
-    # "Ensemble": DetectorTuple(EnsembleDetector, WEIGHTS.joinpath("EnsembleDetector")),
+    "EnsembleDetector": DetectorTuple(EnsembleDetector, WEIGHTS.joinpath("EnsembleDetector")),
 }
 
 
@@ -41,8 +42,7 @@ def load_detector(detector_id: str, device="cpu") -> torch.nn.Module:
     detector_cls, weights_path = DETECTORS[detector_id]
     detector = detector_cls()
     detector.load_pretrained(weights_path)
-    detector.to(device)
-    detector.eval()
+    detector.configure(device=device, training=False)
     return detector
 
 
@@ -67,6 +67,7 @@ def main():
             images = images.contiguous().to(device=device)
             batch_labels, batch_scores = detector(images)
             results.extend(batch_labels.flatten().tolist())
+            print(batch_scores)
 
     if verbose:
         print(f"Number of images: {len(results)}")
