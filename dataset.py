@@ -1,11 +1,11 @@
 from pathlib import Path
-from typing import List
 
-import pandas as pd
 import torch
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
+
+from utils import create_dataset_csv
 
 torch.manual_seed(42)
 
@@ -30,7 +30,7 @@ class ImageDataset(Dataset):
         self._csv_path = csv_path
         self._images = [img for img in data_dir.iterdir() if img.suffix in IMG_EXTENSIONS]
         if not self._csv_path.exists():
-            create_csv(self._images, label, csv_path)
+            create_dataset_csv(self._images, label, csv_path)
 
     def __len__(self):
         return len(self._images)
@@ -43,23 +43,6 @@ class ImageDataset(Dataset):
         #if self._transform:
         #    img = self._transform(img)
         return img, img_name
-
-
-def create_csv(images: List, label: int, csv_path: Path) -> None:
-    """
-    Create a csv file. The csv file contains a row for each image,
-    with the image name and the label. The label is the same for all images.
-
-    Args:
-        images: List of images
-        label:
-        csv_path:
-    """
-    df = pd.DataFrame(columns=["filename", "label"])
-    df["filename"] = [img.name for img in images]
-    df["label"] = label
-    df.to_csv(csv_path, index=False)
-    return None
 
 
 def get_dataloader(data_dir: Path, label: int, csv_path: Path, transform=None, batch_size: int = 32, num_workers: int = 0) -> DataLoader:

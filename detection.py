@@ -1,12 +1,12 @@
 from pathlib import Path
 from typing import Dict, NamedTuple, Protocol, Type
 
-import pandas as pd
 import torch
 
 from dataset import get_dataloader
-from detectors.GAN_image_detection import Detector as EnsembleDetector
 from detectors.CNNDetection import Detector as CNNDetector
+from detectors.GAN_image_detection import Detector as EnsembleDetector
+from utils import add_results_to_csv
 
 torch.manual_seed(42)
 
@@ -50,6 +50,8 @@ def main():
     verbose = True
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     detector_id = "CNNDetector"
+
+    print(f"Loading detector {detector_id} on device {device}...")
     detector = load_detector(detector_id, device)
 
     dataset_id = "StableDiffusion2"  # "MSCOCO2014"
@@ -59,9 +61,11 @@ def main():
     data_dir = Path("data", dataset_id, dataset_subfolder)
     csv_path = Path("csvs", f"{dataset_id}.csv")
 
+    print(f"Loading dataset {data_dir} and creating a csv in {csv_path}...")
     dataloader = get_dataloader(data_dir, label=label, csv_path=csv_path, batch_size=3)
     results = []
 
+    print("Running detector...")
     for (images, names) in dataloader:
         with torch.no_grad():
             images = images.contiguous().to(device=device)
@@ -74,9 +78,8 @@ def main():
         print(f"Number of fake images: {sum(results)}")
         print(results)
 
-    df = pd.read_csv(csv_path)
-    df[detector_id] = results
-    df.to_csv(csv_path, index=False)
+    print("Saving results to csv...")
+    add_results_to_csv(csv_path, detector_id, results)
 
 
 if __name__ == "__main__":
