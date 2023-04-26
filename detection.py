@@ -62,18 +62,24 @@ def load_detector(detector_id: str, device="cpu") -> torch.nn.Module:
 def main():
     verbose = True
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
-    detector_id = "EnsembleDetector"
+    detector_id = "CNNDetector"
     dataset_id = "MSCOCO2014_valsubset"
+    compression = None  # 100 - 10 (most compressed) or None
+
+    augmentations = {
+        "compression": compression,
+    }
 
     print(f"Loading detector {detector_id} on device {device}...")
     detector = load_detector(detector_id, device)
 
     data_dir, label = DATASETS[dataset_id]
-    csv_path = Path("csvs",  f"{dataset_id}.csv")
-    csv_print = f" and creating a csv in {csv_path}" if not csv_path.exists() else ""
+    csv_subname = f"_comp{compression}" if compression is not None else ""
+    csv_path = Path("csvs",  f"{dataset_id}{csv_subname}.csv")
+    csv_print = f" and creating a CSV in {csv_path}" if not csv_path.exists() else ""
 
     print(f"Loading dataset {data_dir}{csv_print}...")
-    dataloader = get_dataloader(data_dir, label=label, csv_path=csv_path, batch_size=1)
+    dataloader = get_dataloader(data_dir, label=label, csv_path=csv_path, batch_size=1, augmentations=augmentations)
     results = []
     scores = []
 
@@ -89,7 +95,7 @@ def main():
         print(f"Number of images: {len(results)}")
         print(f"Number of alleged fake images: {sum(results)}")
 
-    print("Saving results to csv...")
+    print("Saving results to CSV...")
     add_results_to_csv(csv_path, detector_id, results, scores)
 
 
