@@ -1,15 +1,23 @@
 import torch
-from diffusers import StableDiffusionPipeline, EulerDiscreteScheduler
+from diffusers import StableDiffusionPipeline, EulerDiscreteScheduler, LDMTextToImagePipeline, UnCLIPPipeline
 
 torch.manual_seed(42)
 
-model_id = "stabilityai/stable-diffusion-2"
+# Diffusers weights are downloaded automatically on first run,
+# cached in user/cache/huggingface by default on Windows
+sd2 = "stabilityai/stable-diffusion-2"
+ldm = "CompVis/ldm-text2im-large-256"
+dalle2 = "nousr/conditioned-prior"
 
-# Use the Euler scheduler here instead
-scheduler = EulerDiscreteScheduler.from_pretrained(model_id, subfolder="scheduler")
-pipe = StableDiffusionPipeline.from_pretrained(model_id, scheduler=scheduler, torch_dtype=torch.float16)
+# pipe = StableDiffusionPipeline.from_pretrained(sd2, torch_dtype=torch.float16)
+# pipe = LDMTextToImagePipeline.from_pretrained(ldm)
+pipe = UnCLIPPipeline.from_pretrained(dalle2)
+
+# Use the Euler scheduler
+# pipe.scheduler = EulerDiscreteScheduler.from_config(pipe.scheduler.config)
+
 pipe = pipe.to("cuda")
-#pipe.enable_xformers_memory_efficient_attention()
+# pipe.enable_xformers_memory_efficient_attention()
 
 prompts = [
 "a photo of an astronaut riding a horse on mars, photorealistic",
@@ -20,4 +28,4 @@ prompts = [
 
 for idx, prompt in enumerate(prompts):
     image = pipe(prompt).images[0]
-    image.save(f"samples/{idx+4}.png")
+    image.save(f"samples/{idx+8}.png")
