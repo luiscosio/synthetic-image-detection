@@ -3,7 +3,8 @@ from typing import Dict, NamedTuple, Type, Union
 
 import pandas as pd
 import torch
-from diffusers import DiffusionPipeline, EulerDiscreteScheduler, LDMTextToImagePipeline, StableDiffusionPipeline
+from diffusers import DiffusionPipeline, LDMTextToImagePipeline, StableDiffusionPipeline
+from tqdm import tqdm
 
 torch.manual_seed(42)
 
@@ -55,15 +56,15 @@ def generate_from_huggingface(generator_id: str, huggingface_tuple: GeneratorHug
     path_out = Path("data", generator_id, "PartiPrompts")
     path_out.mkdir(parents=True, exist_ok=True)
 
-    for idx, prompt in list(indexed_prompts):
+    for idx, prompt in tqdm(list(indexed_prompts), unit="img"):
         image = pipe(prompt).images[0]
         image.save(path_out.joinpath(str(idx).zfill(4) + ".png"))
 
 
 def main():
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
-    # generator_id = "StableDiffusion2"
-    generator_id = "LDM"
+    generator_id = "StableDiffusion2"
+    # generator_id = "LDM"
     gen_type, sub_tuple = GENERATORS[generator_id]
     if gen_type == "huggingface":
         generate_from_huggingface(generator_id, sub_tuple, device)
