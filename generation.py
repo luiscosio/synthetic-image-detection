@@ -50,10 +50,12 @@ def generate_from_huggingface(generator_id: str, huggingface_tuple: GeneratorHug
     csv_path = Path("csvs", "PartiPrompts.csv")
     df = pd.read_csv(csv_path, sep=";")
     prompts = df["Prompt"].tolist()
+    indices = df["Index"].tolist()
+    indexed_prompts = zip(indices, prompts)
     path_out = Path("data", generator_id, "PartiPrompts")
     path_out.mkdir(parents=True, exist_ok=True)
 
-    for idx, prompt in enumerate(prompts):
+    for idx, prompt in list(indexed_prompts):
         image = pipe(prompt).images[0]
         image.save(path_out.joinpath(str(idx).zfill(4) + ".png"))
 
