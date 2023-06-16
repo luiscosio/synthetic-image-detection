@@ -7,6 +7,7 @@ from diffusers import DiffusionPipeline, LDMTextToImagePipeline, StableDiffusion
 from tqdm import tqdm
 
 torch.manual_seed(42)
+torch.backends.cudnn.benchmark = True
 
 
 class GeneratorHugging(NamedTuple):
@@ -28,7 +29,7 @@ class GeneratorTuple(NamedTuple):
 # cached in user/cache/huggingface by default on Windows
 GENERATORS: Dict[str, GeneratorTuple] = {
     "StableDiffusion2": GeneratorTuple("huggingface",
-                                       GeneratorHugging("stabilityai/stable-diffusion-2",
+                                       GeneratorHugging("stabilityai/stable-diffusion-2-1-base",
                                                         StableDiffusionPipeline,
                                                         torch.float16)),
     "LDM": GeneratorTuple("huggingface",
