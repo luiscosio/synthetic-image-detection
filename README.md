@@ -3,9 +3,17 @@ A work-in-progress collection of synthetic image detectors.
 
 # Disclaimer
 This repository contains other repositories as submodules.
-Refer to each submodule's licences when using them.
 The original repository of a submodule may have been edited slightly to make it compatible,
 therefore their performance or results may have been altered, but their key ideas should remain the same.
+<details close>
+<summary>Licenses</summary>
+
+| Method                                                                    | License                                                                                |
+|:--------------------------------------------------------------------------|:---------------------------------------------------------------------------------------|
+| [CNNDetection](https://github.com/PeterWang512/CNNDetection)              | Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International Public License |
+| [GAN-image-detection](https://github.com/polimi-ispl/GAN-image-detection) | GNU GENERAL PUBLIC LICENSE                                                             |
+
+</details>
 
 # Installation
 ## Cloning
