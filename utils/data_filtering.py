@@ -45,21 +45,15 @@ def download_midjourney_data(csv_path: Path,
     # Loop through the rows of the DataFrame
     for index, row in tqdm(data.iterrows(), total=data.shape[0], unit="img"):
         # Get the image URL and prompt
-        image_url = row['Attachments']
-        prompt = row['clean_prompts']
-
-        # Clean the prompt to create a valid file name
-        file_name = clean_filename(prompt)
-
-        if file_name is None:
-            print(f"Skipping row {index}: invalid or missing prompt")
-            continue
+        image_url = row["Attachments"]
+        og_idx = row["original_index"]
 
         # Get the file extension from the image URL
         file_extension = Path(image_url).suffix
 
-        # Combine the folder name, file name, and extension to form the image file path
-        image_file_path = dir_out.joinpath(f"{file_name}{file_extension}")
+        image_file_path = dir_out.joinpath(f"{og_idx}{file_extension}")
+        if image_file_path.exists():
+            continue
 
         # Download and save the image
         max_retries = 3
@@ -67,26 +61,18 @@ def download_midjourney_data(csv_path: Path,
             try:
                 response = requests.get(image_url)
                 if response.status_code != 200:
-                    print(f"Error downloading image at row {index}: {response.status_code}")
+                    print(f"Error downloading image at row {index} (idx {og_idx}): {response.status_code}")
                     continue
                 with open(image_file_path, 'wb') as f:
                     f.write(response.content)
                     break
             except requests.exceptions.RequestException as e:
                 if attempt < max_retries - 1:
-                    print(f"Error downloading image at row {index} (attempt {attempt + 1}): {str(e)}")
+                    print(f"Error downloading image at row {index} (idx {og_idx}) (attempt {attempt + 1}): {str(e)}")
                     time.sleep(3)  # Wait before retrying
                 else:
-                    print(f"Failed to download image at row {index} after {max_retries} attempts: {str(e)}")
+                    print(f"Failed to download image at row {index} (idx {og_idx}) after {max_retries} attempts: {str(e)}")
                     continue
-
-
-def clean_filename(file_name, max_length=100):
-    # Remove illegal characters from file names
-    if not isinstance(file_name, str):
-        return None
-    cleaned_name = re.sub(r'[\\/*?:"<>|]', "", file_name)
-    return cleaned_name[:max_length]
 
 
 def test_midjourney_filters(midjourney_csv: Path,
@@ -131,7 +117,8 @@ def filter_midjourney_data(data: pd.DataFrame,
     # allowed_versions = ["4", "4.0", "5", "5.0", "5.1"]
     allowed_versions = ["5.1"]
     required_words = ["photo"]  # Prompt having ANY of these subwords is kept (unless blocked)
-    blocked_words = ["cartoon", "comic", "painting", "drawing", "animation", "sprite"]  # Prompt having ANY of these subwords is removed
+    # Prompt having ANY of these subwords is removed
+    blocked_words = ["cartoon", "comic", "painting", "drawing", "animation", "sprite", "drawn", "sketch", "anime"]
     allowed_ratios = ["1:1"]  # Multiples are discarded, such as 2:2 and 3:3
     max_characters = 1600  # Prompts + parameters with more characters are removed
 
