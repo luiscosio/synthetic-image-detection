@@ -1,7 +1,12 @@
+import csv
+import json
 import re
+import shutil
 import time
+from collections import defaultdict
 from pathlib import Path
-from typing import Optional
+import random
+from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -11,6 +16,7 @@ from tqdm import tqdm
 from dataset import IMG_EXTENSIONS
 
 np.random.seed(42)
+random.seed(42)
 
 
 def download_midjourney_data(csv_path: Path,
@@ -211,13 +217,87 @@ def filter_midjourney_data(data: pd.DataFrame,
     return data
 
 
+def create_coco_subset(captions_json: Path,
+                       dir_in: Path,
+                       dir_out: Path,
+                       csv_out: Path,
+                       desired_size: int) -> None:
+    dir_out.mkdir(parents=True, exist_ok=True)
+
+    with open(captions_json) as f:
+        data = json.load(f)
+
+    # Change the image list to a dictionary with the image id as key
+    image_list = data["images"]
+    images = {image["id"]: image for image in image_list}
+
+    # Create a dict with image id as a key and each matching annotation in a list as value
+    annotations = data["annotations"]
+    image_annotations = defaultdict(list)
+    for annotation in annotations:
+        image_annotations[annotation["image_id"]].append(annotation)
+
+    data_rows = filter_coco_data(images, image_annotations, desired_size)
+
+    # Write the data to a CSV file
+    csv_fields = ["image_id", "file_name", "height", "width", "caption_id", "caption"]
+    with open(csv_out, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(csv_fields)
+        writer.writerows(data_rows)
+
+    # Copy images to the new directory
+    for row in tqdm(data_rows[0], desc="Copying images", unit="img"):
+        image_name = row[1]
+        image_path = dir_in.joinpath(image_name)
+        shutil.copy(image_path, dir_out.joinpath(image_name))
+
+
+def filter_coco_data(images, annotations, desired_size) -> List[List[str]]:
+    min_size = 300
+    data_rows = [[]]
+    og_length = len(images)
+    for idx, values in images.items():
+        height = values["height"]
+        width = values["width"]
+        if values["height"] < min_size or values["width"] < min_size or height != width:
+            continue
+        if len(annotations[idx]) < 1:
+            continue
+        # Choose the longest text caption in a list of dictionaries under "caption" key
+        _, cap_id, caption = max(annotations[idx], key=lambda d: len(d["caption"])).values()
+
+        data_rows[0].append([idx, values["file_name"], height, width, cap_id, caption])
+
+    # Desired size filter
+    data_length = len(data_rows[0])
+    if isinstance(desired_size, int):
+        if desired_size < data_length:
+            data_rows[0] = random.sample(data_rows[0], desired_size)
+        elif desired_size > og_length:
+            print(f"Desired size is larger than the original data size")
+        else:
+            print(f"Desired size is larger than the filtered data size, consider changing filters")
+
+    print(f"Final data size: {len(data_rows[0])} rows")
+
+    return data_rows
+
+
 def main():
     midjourney_csv = Path("..", "data", "midjourney_v51_cleaned_data", "upscaled_prompts_df.csv")
     dir_out = Path("..", "data", "midjourney_v51_cleaned_data", "filtered_images")
     csv_out = midjourney_csv.parent.joinpath("filtered_prompts.csv")
     # test_midjourney_filters(midjourney_csv, csv_out)
-    download_midjourney_data(csv_path=midjourney_csv, dir_out=dir_out,
-                             apply_filtering=True, csv_out=csv_out, desired_size=1000, validate_data=True)
+    # download_midjourney_data(csv_path=midjourney_csv, dir_out=dir_out,
+    #                          apply_filtering=True, csv_out=csv_out, desired_size=1000, validate_data=True)
+
+    coco_dir = Path("..", "data", "MSCOCO2014")
+    coco_data_dir = coco_dir.joinpath("val2014")
+    coco_json = coco_dir.joinpath("annotations", "captions_val2014.json")
+    coco_data_out = coco_dir.joinpath("filtered_val2014")
+    coco_csv_out = coco_dir.joinpath("filtered_val2014.csv")
+    create_coco_subset(coco_json, coco_data_dir, coco_data_out, coco_csv_out, desired_size=1000)
 
 
 if __name__ == "__main__":
