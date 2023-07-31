@@ -176,6 +176,7 @@ def filter_midjourney_data(data: pd.DataFrame,
         if desired_size < data_length:
             if not validate_data:
                 data = data.sample(n=desired_size, random_state=42)
+                data.sort_values(by="original_index", inplace=True)  # Sort by original index
             else:
                 data_new = data.copy()
                 rng = np.random.default_rng(42)
@@ -193,7 +194,7 @@ def filter_midjourney_data(data: pd.DataFrame,
                             break
                 pbar.close()
                 data_new = data_new.iloc[:running_idx]  # Remove unused rows from the copy
-                data = data_new
+                data = data_new.sort_values(by="original_index", inplace=False)  # Sort by original index
                 if len(data) < desired_size:
                     print(f"Warning: not enough valid data {len(data)} to reach desired size, consider changing filters")
 
@@ -256,7 +257,7 @@ def create_coco_subset(captions_json: Path,
     data_rows = filter_coco_data(images, image_annotations, dir_in, desired_size)
 
     # Write the data to a CSV file
-    csv_fields = ["image_id", "file_name", "height", "width", "caption_id", "caption"]
+    csv_fields = ["image_id", "filename", "height", "width", "caption_id", "caption"]
     with open(csv_out, "w", newline="") as f:
         writer = csv.writer(f, delimiter=";", quotechar='"', quoting=csv.QUOTE_MINIMAL)
         writer.writerow(csv_fields)
@@ -270,7 +271,7 @@ def create_coco_subset(captions_json: Path,
         shutil.copy(image_path, dir_out.joinpath(image_name))
 
 
-def filter_coco_data(images: Dict[int, Union[int, str]],
+def filter_coco_data(images: Dict[int, Dict[str, Union[int, str]]],
                      annotations: Dict[int, List[Dict[str, Union[int, str]]]],
                      dir_in: Path,
                      desired_size: int) -> List[List[Union[int, str]]]:
@@ -285,7 +286,7 @@ def filter_coco_data(images: Dict[int, Union[int, str]],
         desired_size: The desired size of the dataset
 
     Returns:
-        Nested list with each row containing the image id, file name, height, width, caption id and caption
+        Nested list with each row containing the image id, filename, height, width, caption id and caption
     """
     min_size = 300
     data_rows = [[]]
@@ -320,6 +321,7 @@ def filter_coco_data(images: Dict[int, Union[int, str]],
     if isinstance(desired_size, int):
         if desired_size < data_length:
             data_rows[0] = random.sample(data_rows[0], desired_size)
+            data_rows[0].sort(key=lambda x: x[0])  # Sort by image id
         elif desired_size > og_length:
             print(f"Desired size is larger than the original data size")
         else:
@@ -336,15 +338,15 @@ def main():
     dir_out = Path("..", "data", "midjourney_v51_cleaned_data", "filtered_images")
     csv_out = midjourney_csv.parent.joinpath("filtered_prompts.csv")
     # test_midjourney_filters(midjourney_csv, csv_out)
-    # download_midjourney_data(csv_path=midjourney_csv, dir_out=dir_out,
-    #                          apply_filtering=True, csv_out=csv_out, desired_size=desired_size, validate_data=True)
+    download_midjourney_data(csv_path=midjourney_csv, dir_out=dir_out,
+                             apply_filtering=True, csv_out=csv_out, desired_size=desired_size, validate_data=True)
 
     coco_dir = Path("..", "data", "MSCOCO2014")
     coco_data_dir = coco_dir.joinpath("val2014")
     coco_json = coco_dir.joinpath("annotations", "captions_val2014.json")
     coco_data_out = coco_dir.joinpath("filtered_val2014")
     coco_csv_out = coco_dir.joinpath("filtered_val2014.csv")
-    create_coco_subset(coco_json, coco_data_dir, coco_data_out, coco_csv_out, desired_size=desired_size)
+    # create_coco_subset(coco_json, coco_data_dir, coco_data_out, coco_csv_out, desired_size=desired_size)
 
 
 if __name__ == "__main__":
