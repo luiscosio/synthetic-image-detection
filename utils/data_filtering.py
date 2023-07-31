@@ -5,7 +5,7 @@ import shutil
 import time
 from collections import defaultdict
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -221,6 +221,23 @@ def create_coco_subset(captions_json: Path,
                        dir_out: Path,
                        csv_out: Path,
                        desired_size: int) -> None:
+    """
+    Create a subset of the COCO (2014 validation) dataset using the official captions JSON file.
+    Filters and desired size are used to reduce the size of dataset.
+
+    A CSV file is created with the filtered data, each image matched with one caption.
+    The images are copied to a new directory.
+    The images and the JSON need to be downloaded beforehand from https://cocodataset.org/#download,
+    (http://images.cocodataset.org/zips/val2014.zip and
+    http://images.cocodataset.org/annotations/annotations_trainval2014.zip).
+
+    Args:
+        captions_json: Path to the official COCO captions JSON file
+        dir_in: Directory where the images are located
+        dir_out: Directory where the images will be copied
+        csv_out: Path to the CSV file where the filtered data will be saved
+        desired_size: The desired size of the dataset
+    """
     dir_out.mkdir(parents=True, exist_ok=True)
 
     with open(captions_json) as f:
@@ -253,7 +270,23 @@ def create_coco_subset(captions_json: Path,
         shutil.copy(image_path, dir_out.joinpath(image_name))
 
 
-def filter_coco_data(images, annotations, dir_in, desired_size) -> List[List[str]]:
+def filter_coco_data(images: Dict[int, Union[int, str]],
+                     annotations: Dict[int, List[Dict[str, Union[int, str]]]],
+                     dir_in: Path,
+                     desired_size: int) -> List[List[Union[int, str]]]:
+    """
+    Filter the COCO dataset to match the desired size and filters.
+    The images are filtered to be square, above a minimum size, have at least one caption and not be grayscale.
+
+    Args:
+        images: Dictionary with the image id as key and the image data as value
+        annotations: Dictionary with the image id as key and a list of annotations as value
+        dir_in: Directory where the images are located
+        desired_size: The desired size of the dataset
+
+    Returns:
+        Nested list with each row containing the image id, file name, height, width, caption id and caption
+    """
     min_size = 300
     data_rows = [[]]
     og_length = len(images)
@@ -277,7 +310,7 @@ def filter_coco_data(images, annotations, dir_in, desired_size) -> List[List[str
         if np.array_equal(img[:, :, 0], img[:, :, 1]) and np.array_equal(img[:, :, 0], img[:, :, 2]):
             continue
 
-        # Choose the longest text caption in a list of dictionaries under "caption" key
+        # Choose the longest text caption in a list of dictionaries under "caption" key, longest in COCO is ~50 words
         _, cap_id, caption = max(annotations[idx], key=lambda d: len(d["caption"])).values()
 
         data_rows[0].append([idx, values["file_name"], height, width, cap_id, caption])
@@ -298,19 +331,20 @@ def filter_coco_data(images, annotations, dir_in, desired_size) -> List[List[str
 
 
 def main():
+    desired_size = 1000
     midjourney_csv = Path("..", "data", "midjourney_v51_cleaned_data", "upscaled_prompts_df.csv")
     dir_out = Path("..", "data", "midjourney_v51_cleaned_data", "filtered_images")
     csv_out = midjourney_csv.parent.joinpath("filtered_prompts.csv")
     # test_midjourney_filters(midjourney_csv, csv_out)
     # download_midjourney_data(csv_path=midjourney_csv, dir_out=dir_out,
-    #                          apply_filtering=True, csv_out=csv_out, desired_size=1000, validate_data=True)
+    #                          apply_filtering=True, csv_out=csv_out, desired_size=desired_size, validate_data=True)
 
     coco_dir = Path("..", "data", "MSCOCO2014")
     coco_data_dir = coco_dir.joinpath("val2014")
     coco_json = coco_dir.joinpath("annotations", "captions_val2014.json")
     coco_data_out = coco_dir.joinpath("filtered_val2014")
     coco_csv_out = coco_dir.joinpath("filtered_val2014.csv")
-    create_coco_subset(coco_json, coco_data_dir, coco_data_out, coco_csv_out, desired_size=1000)
+    create_coco_subset(coco_json, coco_data_dir, coco_data_out, coco_csv_out, desired_size=desired_size)
 
 
 if __name__ == "__main__":
