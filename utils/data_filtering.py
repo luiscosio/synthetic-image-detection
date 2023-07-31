@@ -1,16 +1,16 @@
 import csv
 import json
-import re
+import random
 import shutil
 import time
 from collections import defaultdict
 from pathlib import Path
-import random
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 import numpy as np
 import pandas as pd
 import requests
+from PIL import Image
 from tqdm import tqdm
 
 from dataset import IMG_EXTENSIONS
@@ -49,7 +49,7 @@ def download_midjourney_data(csv_path: Path,
         data = filter_midjourney_data(data, csv_out, desired_size, validate_data)
 
     # Loop through the rows of the DataFrame
-    for index, row in tqdm(data.iterrows(), total=data.shape[0], unit="img"):
+    for index, row in tqdm(data.iterrows(), total=data.shape[0], desc="Downloading images", unit="img"):
         # Get the image URL and prompt
         image_url = row["Attachments"]
         og_idx = row["original_index"]
@@ -177,11 +177,10 @@ def filter_midjourney_data(data: pd.DataFrame,
             if not validate_data:
                 data = data.sample(n=desired_size, random_state=42)
             else:
-                print("Validating data...")
                 data_new = data.copy()
                 rng = np.random.default_rng(42)
                 running_idx = 0
-                pbar = tqdm(total=desired_size, unit="rows")
+                pbar = tqdm(total=desired_size, desc="Validating data", unit="rows")
                 for idx in rng.choice(data_length, data_length, replace=False):
                     row = data.iloc[idx]
                     image_url = row["Attachments"]
@@ -237,14 +236,15 @@ def create_coco_subset(captions_json: Path,
     for annotation in annotations:
         image_annotations[annotation["image_id"]].append(annotation)
 
-    data_rows = filter_coco_data(images, image_annotations, desired_size)
+    data_rows = filter_coco_data(images, image_annotations, dir_in, desired_size)
 
     # Write the data to a CSV file
     csv_fields = ["image_id", "file_name", "height", "width", "caption_id", "caption"]
     with open(csv_out, "w", newline="") as f:
-        writer = csv.writer(f)
+        writer = csv.writer(f, delimiter=";", quotechar='"', quoting=csv.QUOTE_MINIMAL)
         writer.writerow(csv_fields)
-        writer.writerows(data_rows)
+        for row in tqdm(data_rows, desc="Writing CSV", unit="row"):
+            writer.writerows(row)
 
     # Copy images to the new directory
     for row in tqdm(data_rows[0], desc="Copying images", unit="img"):
@@ -253,17 +253,30 @@ def create_coco_subset(captions_json: Path,
         shutil.copy(image_path, dir_out.joinpath(image_name))
 
 
-def filter_coco_data(images, annotations, desired_size) -> List[List[str]]:
+def filter_coco_data(images, annotations, dir_in, desired_size) -> List[List[str]]:
     min_size = 300
     data_rows = [[]]
     og_length = len(images)
-    for idx, values in images.items():
+    for idx, values in tqdm(images.items(), desc="Filtering images", unit="img"):
         height = values["height"]
         width = values["width"]
+
+        # Above minimum size and square
         if values["height"] < min_size or values["width"] < min_size or height != width:
             continue
+
+        # At least one caption
         if len(annotations[idx]) < 1:
             continue
+
+        # Not grayscale (1 channel nor 3 channel)
+        img = Image.open(dir_in.joinpath(values["file_name"]))
+        img = np.array(img, dtype=np.uint8)
+        if len(img.shape) < 3:
+            continue
+        if np.array_equal(img[:, :, 0], img[:, :, 1]) and np.array_equal(img[:, :, 0], img[:, :, 2]):
+            continue
+
         # Choose the longest text caption in a list of dictionaries under "caption" key
         _, cap_id, caption = max(annotations[idx], key=lambda d: len(d["caption"])).values()
 
