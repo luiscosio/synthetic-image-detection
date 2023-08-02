@@ -332,14 +332,113 @@ def filter_coco_data(images: Dict[int, Dict[str, Union[int, str]]],
     return data_rows
 
 
+def create_subset_from_structure(data_dir: Path, dir_out: Path, desired_size: int) -> None:
+    """
+    Create a subset of a dataset with the following folder structure:
+    Dataset
+    ├── class_1
+    │   ├── real (not used)
+    │   ├── fake
+    │   │   ├── image1.png
+    │   │   ├── image2.png
+    │   │   └── ...
+    ├── class_2
+    │   ├── ...
+    ├── ...
+
+    Images are copied to the new directory without keeping the original folder structure.
+
+    Args:
+        data_dir: Path to the dataset with the specified structure
+        dir_out: Path to the directory where the subset will be created
+        desired_size: The desired size of the dataset
+    """
+    class_dirs = list(data_dir.glob("*/*fake*"))
+    if len(class_dirs) == 0:
+        print("No fake image folders found, check the folder structure")
+        return
+    class_sizes = [len(list(class_dir.glob("*"))) for class_dir in class_dirs]
+    balanced_size, remainder = divmod(desired_size, len(class_dirs))
+    small_classes = np.array(class_sizes) < balanced_size
+    image_paths = []
+    dir_out.mkdir(parents=True, exist_ok=True)
+
+    if sum(class_sizes) <= desired_size:
+        print(f"Desired size is larger than the original size of the dataset, copying the whole dataset")
+        for class_dir in class_dirs:
+            image_paths.extend(list(class_dir.glob("*")))
+
+    elif small_classes.any():
+        print(f"The subset will be unbalanced (use desired_size {min(class_sizes)*len(class_dirs)} for a balanced set)")
+
+        def add_images_recursively(remaining_class_dirs: List[Path],
+                                   remaining_class_sizes: List[int],
+                                   current_best_size: int,
+                                   needed_images: int) -> None:
+            """
+            Recursively add images to the parent function's list, going from smallest to largest class.
+            The bigger the class, the more images it will have, while keeping classes as balanced as possible.
+
+            Args:
+                remaining_class_dirs: Class directories that have not been added to the subset
+                remaining_class_sizes: Sizes of the remaining classes
+                current_best_size: Current optimal size for every remaining class
+                needed_images: Number of images left to add to the subset
+            """
+            smallest_pos = np.argmin(remaining_class_sizes)
+            class_dir = remaining_class_dirs[smallest_pos]
+            class_size = remaining_class_sizes[smallest_pos]
+
+            if class_size < current_best_size:
+                image_paths.extend(list(class_dir.glob("*")))
+                needed_images -= class_size
+
+            else:
+                image_paths.extend(random.sample(list(class_dir.glob("*")), current_best_size))
+                needed_images -= current_best_size
+
+            remaining_class_dirs.pop(smallest_pos)
+            remaining_class_sizes.pop(smallest_pos)
+            if len(remaining_class_dirs) == 0:
+                return
+            current_best_size = needed_images // len(remaining_class_dirs)  # Biggest class has no remainder
+            add_images_recursively(remaining_class_dirs, remaining_class_sizes, current_best_size, needed_images)
+
+        add_images_recursively(class_dirs, class_sizes, balanced_size, desired_size)
+
+    elif remainder != 0:
+        print(f"Desired size is not perfectly divisible by the number of classes, creating a slightly unbalanced subset")
+        counter = 0
+        for class_dir, class_size in zip(class_dirs, class_sizes):
+            if counter != remainder and class_size > balanced_size:
+                addition = 1
+                counter += 1
+            else:
+                addition = 0
+            image_paths.extend(random.sample(list(class_dir.glob("*")), balanced_size+addition))
+
+    else:
+        print(f"Creating a balanced subset of size {desired_size}")
+        for class_dir in class_dirs:
+            image_paths.extend(random.sample(list(class_dir.glob("*")), balanced_size))
+
+    print(f"Final data size: {len(image_paths)} images")
+
+    # Copy images to the new directory
+    zfill_size = len(str(len(image_paths)))
+    for idx, image_path in tqdm(enumerate(image_paths), desc="Copying images", unit="img"):
+        name = str(idx).zfill(zfill_size) + image_path.suffix
+        shutil.copy(image_path, dir_out.joinpath(name))
+
+
 def main():
     desired_size = 1000
     midjourney_csv = Path("..", "data", "midjourney_v51_cleaned_data", "upscaled_prompts_df.csv")
     dir_out = Path("..", "data", "midjourney_v51_cleaned_data", "filtered_images")
     csv_out = midjourney_csv.parent.joinpath("filtered_prompts.csv")
     # test_midjourney_filters(midjourney_csv, csv_out)
-    download_midjourney_data(csv_path=midjourney_csv, dir_out=dir_out,
-                             apply_filtering=True, csv_out=csv_out, desired_size=desired_size, validate_data=True)
+    #download_midjourney_data(csv_path=midjourney_csv, dir_out=dir_out,
+    #                         apply_filtering=True, csv_out=csv_out, desired_size=desired_size, validate_data=True)
 
     coco_dir = Path("..", "data", "MSCOCO2014")
     coco_data_dir = coco_dir.joinpath("val2014")
@@ -347,6 +446,10 @@ def main():
     coco_data_out = coco_dir.joinpath("filtered_val2014")
     coco_csv_out = coco_dir.joinpath("filtered_val2014.csv")
     # create_coco_subset(coco_json, coco_data_dir, coco_data_out, coco_csv_out, desired_size=desired_size)
+
+    stylegan_dir = Path("..", "data", "easy_to_spot_dataset", "stylegan2")
+    stylegan_data_out = Path("..", "data", "StyleGAN2", "filtered_images")
+    create_subset_from_structure(stylegan_dir, stylegan_data_out, desired_size=desired_size)
 
 
 if __name__ == "__main__":
