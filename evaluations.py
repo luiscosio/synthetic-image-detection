@@ -1,11 +1,39 @@
 from pathlib import Path
-from typing import List
+from typing import List, Literal
 
+import matplotlib.pyplot as plt
 import pandas as pd
 from PIL import Image
-from sklearn.metrics import accuracy_score, average_precision_score, roc_auc_score
+from sklearn.metrics import accuracy_score, average_precision_score, precision_recall_curve, roc_auc_score, roc_curve
 from tqdm import tqdm
 from transformers import CLIPModel, CLIPProcessor
+
+
+def get_detector_values_and_truths(csv_paths: List[Path],
+                                   detector_id: str,
+                                   value_type: Literal["labels", "scores"],
+                                   sep: str = ",") -> (List[float], List[int]):
+    """
+    Get the values and ground truth labels from a CSV file for a detector.
+    The value can refer to a predicdted label or a float output by the detector.
+
+    Args:
+        csv_paths: List of paths to the dataset CSV files
+        detector_id: ID of the detector
+        value_type: Type of the value, either "labels" or "scores"
+        sep: Separator of the CSV file
+
+    Returns:
+        List of values and list of ground truth labels
+    """
+    values = []
+    gt = []
+    for csv_path in csv_paths:
+        df = pd.read_csv(csv_path, sep=sep)
+        gt.extend(df["label"].tolist())
+        values.extend(df[f"{detector_id}_{value_type}"].tolist())
+
+    return values, gt
 
 
 def calculate_detector_accuracy(csv_paths: List[Path], detector_id: str, sep: str = ",") -> float:
@@ -21,13 +49,7 @@ def calculate_detector_accuracy(csv_paths: List[Path], detector_id: str, sep: st
     Returns:
         Total accuracy of the detector on the datasets
     """
-    gt = []
-    preds = []
-    for csv_path in csv_paths:
-        df = pd.read_csv(csv_path, sep=sep)
-        gt.extend(df["label"].tolist())
-        preds.extend(df[f"{detector_id}_labels"].tolist())
-
+    preds, gt = get_detector_values_and_truths(csv_paths, detector_id, "labels", sep=sep)
     return accuracy_score(gt, preds)
 
 
@@ -44,13 +66,7 @@ def calculate_detector_auc(csv_paths: List[Path], detector_id: str, sep: str = "
     Returns:
         Total AUC of the detector on the datasets
     """
-    gt = []
-    scores = []
-    for csv_path in csv_paths:
-        df = pd.read_csv(csv_path, sep=sep)
-        gt.extend(df["label"].tolist())
-        scores.extend(df[f"{detector_id}_scores"].tolist())
-
+    scores, gt = get_detector_values_and_truths(csv_paths, detector_id, "scores", sep=sep)
     return roc_auc_score(gt, scores)
 
 
@@ -67,14 +83,49 @@ def calculate_detector_average_precision(csv_paths: List[Path], detector_id: str
     Returns:
         Total average precision of the detector on the datasets
     """
-    gt = []
-    scores = []
-    for csv_path in csv_paths:
-        df = pd.read_csv(csv_path, sep=sep)
-        gt.extend(df["label"].tolist())
-        scores.extend(df[f"{detector_id}_scores"].tolist())
-
+    scores, gt = get_detector_values_and_truths(csv_paths, detector_id, "scores", sep=sep)
     return average_precision_score(gt, scores)
+
+
+def plot_auc_and_ap(csv_paths: List[Path], detector_id: str, sep: str = ",") -> None:
+    """
+    Plot the ROC and RP curves and their areas under the curves for a detector on given datasets.
+
+    Args:
+        csv_paths: List of paths to the dataset CSV files
+        detector_id: ID of the detector
+        sep: Separator for the CSV file
+    """
+    scores, gt = get_detector_values_and_truths(csv_paths, detector_id, "scores", sep=sep)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.5, 6))
+    plt.rcParams.update({'font.size': 12})
+
+    # ROC curve
+    fpr, tpr, _ = roc_curve(gt, scores)
+    auc = roc_auc_score(gt, scores)
+    ax1.plot(fpr, tpr, label=f"AUC={auc:.4f}")
+    ax1.set_xlabel("False Positive Rate", fontsize=12)
+    ax1.set_ylabel("True Positive Rate", fontsize=12)
+    ax1.set_title("AUC")
+    ax1.fill_between(fpr, tpr, alpha=0.2)
+    ax1.legend(loc="lower right")
+
+    # RP curve
+    precision, recall, _ = precision_recall_curve(gt, scores)
+    ap = average_precision_score(gt, scores)
+    ax2.plot(recall, precision, label=f"AP={ap:.4f}")
+    ax2.set_xlabel("True Positive Rate", fontsize=12)
+    ax2.set_ylabel("Precision", fontsize=12)
+    ax2.set_title("Average Precision")
+    ax2.fill_between(recall, precision, alpha=0.2)
+    ax2.legend(loc="lower right")
+
+    # Adjust layout
+    ax1.set_aspect("equal")
+    ax2.set_aspect("equal")
+    plt.tight_layout()
+
+    plt.show()
 
 
 def calculate_clip_score(prompts: List[str], image_paths: List[Path]) -> float:
@@ -132,14 +183,17 @@ def calculate_clip_score_from_csv(csv_path: Path, image_dir: Path, column: str =
 def main():
     csv_path = Path("csvs", "PartiPrompts.csv")
     image_dir = Path("data", "StableDiffusion2", "PartiPrompts")
-    score = calculate_clip_score_from_csv(csv_path, image_dir, column="Prompt", sep=";")
-    print(score)
+    # score = calculate_clip_score_from_csv(csv_path, image_dir, column="Prompt", sep=";")
+    # print(score)
 
-    # csv_paths = [Path("csvs", "MSCOCO2014_valsubset.csv"), Path("csvs", "StableDiffusion2.csv")]
+    csv_paths = [Path("csvs", "MSCOCO2014_filtered_val.csv"), Path("csvs", "StyleGAN2.csv")]
+    csv_paths = [Path("csvs", "StyleGAN2r.csv"), Path("csvs", "StyleGAN2f.csv")]
     # detector_id = "EnsembleDetector"
+    detector_id = "CNNDetector"
     # print(f"acc: {calculate_detector_accuracy(csv_paths, detector_id)}")
-    # print(f"aucroc: {calculate_detector_auc(csv_paths, detector_id)}")
-    # print(f"ap: {calculate_detector_average_precision(csv_paths, detector_id)}")
+    plot_auc_and_ap(csv_paths, detector_id)
+    print(f"aucroc: {calculate_detector_auc(csv_paths, detector_id)}")
+    print(f"ap: {calculate_detector_average_precision(csv_paths, detector_id)}")
 
 
 if __name__ == "__main__":
