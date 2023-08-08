@@ -1,5 +1,5 @@
 # About
-A work-in-progress collection of synthetic image detectors.
+A work-in-progress code for evaluating synthetic image detectors.
 
 # Disclaimer
 This repository contains other repositories as submodules.
@@ -47,5 +47,7 @@ Stable Diffusion 2.1 and LDM can be used to create synthetic images from prompts
 | [COCO 2014 validation](https://cocodataset.org/#download)                                          | Real  |
 | [Midjourney v5.1](https://www.kaggle.com/datasets/iraklip/modjourney-v51-cleaned-data)             | Fake  | 
 | [StyleGAN2](https://github.com/peterwang512/CNNDetection) (CNNDetection)                           | Fake  |
+| [VQGAN](https://github.com/CompVis/taming-transformers) (Taming Transformers)                      | Fake  |
+| [GANs and DMs](https://github.com/grip-unina/DMimageDetection) (DMimageDetection)                  | Fake  |
 
 </details>
