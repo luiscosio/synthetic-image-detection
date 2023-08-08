@@ -29,7 +29,7 @@ class DatasetTuple(NamedTuple):
 
 WEIGHTS = Path("weights")
 DETECTORS: Dict[str, DetectorTuple] = {
-    "CNNDetector": DetectorTuple(CNNDetector, WEIGHTS.joinpath("CNNDetector", "blur_jpg_prob0.5.pth")),
+    "CNNDetector": DetectorTuple(CNNDetector, WEIGHTS.joinpath("CNNDetector", "blur_jpg_prob0.1.pth")),
     "EnsembleDetector": DetectorTuple(EnsembleDetector, WEIGHTS.joinpath("EnsembleDetector")),
 }
 
@@ -37,7 +37,15 @@ DATA = Path("data")
 DATASETS: Dict[str, DatasetTuple] = {
     "MSCOCO2014_val2014": DatasetTuple(DATA.joinpath("MSCOCO2014", "val2014"), 0),
     "MSCOCO2014_valsubset": DatasetTuple(DATA.joinpath("MSCOCO2014", "valsubset"), 0),
-    "StableDiffusion2": DatasetTuple(DATA.joinpath("StableDiffusion2", "samples"), 1),
+    "MSCOCO2014_filtered_val": DatasetTuple(DATA.joinpath("MSCOCO2014", "filtered_val"), 0),
+    "StableDiffusion2": DatasetTuple(DATA.joinpath("StableDiffusion2", "filtered_val2014_ts50"), 1),
+    "LDM": DatasetTuple(DATA.joinpath("LDM", "filtered_val2014_ts50"), 1),
+    "Midjourney": DatasetTuple(DATA.joinpath("midjourney_v51_cleaned_data", "filtered_images"), 1),
+    "StyleGAN2": DatasetTuple(DATA.joinpath("StyleGAN2", "filtered_images"), 1),
+    "StyleGAN2r": DatasetTuple(DATA.joinpath("StyleGAN2", "all_real"), 0),
+    "StyleGAN2f": DatasetTuple(DATA.joinpath("StyleGAN2", "all_fake"), 1),
+    "VQGAN": DatasetTuple(DATA.joinpath("VQGAN", "filtered_images"), 1),
+    "DALLE2": DatasetTuple(DATA.joinpath("DALLE2", "DMimageDetection"), 1),
 }
 
 
@@ -63,7 +71,8 @@ def main():
     verbose = True
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     detector_id = "CNNDetector"
-    dataset_id = "MSCOCO2014_valsubset"
+    #dataset_id = "MSCOCO2014_filtered_val"
+    dataset_id = "StableDiffusion2"
     compression = None  # 100 - 10 (most compressed) or None
 
     augmentations = {
@@ -74,17 +83,16 @@ def main():
     detector = load_detector(detector_id, device)
 
     data_dir, label = DATASETS[dataset_id]
-    csv_subname = f"_comp{compression}" if compression is not None else ""
+    csv_subname = f"_compression{compression}" if compression is not None else ""
     csv_path = Path("csvs",  f"{dataset_id}{csv_subname}.csv")
     csv_print = f" and creating a CSV in {csv_path}" if not csv_path.exists() else ""
 
     print(f"Loading dataset {data_dir}{csv_print}...")
-    dataloader = get_dataloader(data_dir, label=label, csv_path=csv_path, batch_size=1, augmentations=augmentations)
+    dataloader = get_dataloader(data_dir, label=label, csv_path=csv_path, batch_size=32, augmentations=augmentations)
     results = []
     scores = []
 
-    print("Running detector...")
-    for (images, names) in tqdm(dataloader):
+    for (images, names) in tqdm(dataloader, desc="Performing detection", unit="batch"):
         with torch.no_grad():
             images = images.contiguous().to(device=device)
             batch_labels, batch_scores = detector(images)
