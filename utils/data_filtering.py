@@ -332,13 +332,15 @@ def filter_coco_data(images: Dict[int, Dict[str, Union[int, str]]],
     return data_rows
 
 
-def create_subset_from_structure(data_dir: Path, dir_out: Path, desired_size: int) -> None:
+def create_subset_from_structure(data_dir: Path,
+                                 dir_out: Path,
+                                 desired_size: int,
+                                 class_subfolder: Optional[Union[Path, str]] = None) -> None:
     """
     Create a subset of a dataset with the following folder structure:
     Dataset
     ├── class_1
-    │   ├── real (not used)
-    │   ├── fake
+    │   ├── Optional subfolder
     │   │   ├── image1.png
     │   │   ├── image2.png
     │   │   └── ...
@@ -347,16 +349,27 @@ def create_subset_from_structure(data_dir: Path, dir_out: Path, desired_size: in
     ├── ...
 
     Images are copied to the new directory without keeping the original folder structure.
+    The subset is tried to be made as balanced as possible.
 
     Args:
         data_dir: Path to the dataset with the specified structure
         dir_out: Path to the directory where the subset will be created
         desired_size: The desired size of the dataset
+        class_subfolder: Optional subfolder in the class folders (deeper given as a Path)
     """
-    class_dirs = list(data_dir.glob("*/*fake*"))
+    search_str = "*"
+    if class_subfolder is not None:
+        search_str = f"*/{class_subfolder}"
+
+    class_dirs = list(data_dir.glob(search_str))
     if len(class_dirs) == 0:
-        print("No fake image folders found, check the folder structure")
+        print("No fake images found, check the folder (input) structure")
         return
+
+    # Keep the original order if the class folders are named with digits
+    if all(class_dir.name.isdigit() for class_dir in class_dirs):
+        class_dirs = sorted(class_dirs, key=lambda x: int(x.name))
+
     class_sizes = [len(list(class_dir.glob("*"))) for class_dir in class_dirs]
     balanced_size, remainder = divmod(desired_size, len(class_dirs))
     small_classes = np.array(class_sizes) < balanced_size
@@ -437,19 +450,24 @@ def main():
     dir_out = Path("..", "data", "midjourney_v51_cleaned_data", "filtered_images")
     csv_out = midjourney_csv.parent.joinpath("filtered_prompts.csv")
     # test_midjourney_filters(midjourney_csv, csv_out)
-    #download_midjourney_data(csv_path=midjourney_csv, dir_out=dir_out,
+    # download_midjourney_data(csv_path=midjourney_csv, dir_out=dir_out,
     #                         apply_filtering=True, csv_out=csv_out, desired_size=desired_size, validate_data=True)
 
     coco_dir = Path("..", "data", "MSCOCO2014")
     coco_data_dir = coco_dir.joinpath("val2014")
     coco_json = coco_dir.joinpath("annotations", "captions_val2014.json")
-    coco_data_out = coco_dir.joinpath("filtered_val2014")
-    coco_csv_out = coco_dir.joinpath("filtered_val2014.csv")
+    coco_data_out = coco_dir.joinpath("filtered_val")
+    coco_csv_out = coco_dir.joinpath("filtered_val.csv")
     # create_coco_subset(coco_json, coco_data_dir, coco_data_out, coco_csv_out, desired_size=desired_size)
 
     stylegan_dir = Path("..", "data", "easy_to_spot_dataset", "stylegan2")
     stylegan_data_out = Path("..", "data", "StyleGAN2", "filtered_images")
-    create_subset_from_structure(stylegan_dir, stylegan_data_out, desired_size=desired_size)
+    # create_subset_from_structure(stylegan_dir, stylegan_data_out, desired_size=desired_size, class_subfolder="1_fake")
+
+    vqgan_dir = Path("..", "data", "VQGAN")
+    vqgan_data_dir = vqgan_dir.joinpath("cin_k600_p1.0_a0.05_fid5.20")
+    vqgan_data_out = vqgan_dir.joinpath("filtered_images")
+    # create_subset_from_structure(vqgan_data_dir, vqgan_data_out, desired_size=desired_size)
 
 
 if __name__ == "__main__":
