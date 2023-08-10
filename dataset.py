@@ -36,6 +36,7 @@ class ImageDataset(Dataset):
             create_dataset_csv(self._images, label, csv_path)
 
         transform_list = []
+        transform_list.append(transforms.CenterCrop(224))
         if isinstance(augmentations, Dict):
             compression = augmentations.get("compression")
             if compression:
