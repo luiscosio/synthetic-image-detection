@@ -7,6 +7,7 @@ from tqdm import tqdm
 from dataset import get_dataloader
 from detectors.CNNDetection import Detector as CNNDetector
 from detectors.GAN_image_detection import Detector as EnsembleDetector
+from detectors.UniversalFakeDetect import Detector as CLIPDetector
 from utils import add_results_to_csv
 
 torch.manual_seed(42)
@@ -31,6 +32,7 @@ WEIGHTS = Path("weights")
 DETECTORS: Dict[str, DetectorTuple] = {
     "CNNDetector": DetectorTuple(CNNDetector, WEIGHTS.joinpath("CNNDetector", "blur_jpg_prob0.1.pth")),
     "EnsembleDetector": DetectorTuple(EnsembleDetector, WEIGHTS.joinpath("EnsembleDetector")),
+    "CLIPDetector": DetectorTuple(CLIPDetector, WEIGHTS.joinpath("CLIPDetector", "fc_weights.pth")),
 }
 
 DATA = Path("data")
@@ -70,8 +72,8 @@ def load_detector(detector_id: str, device="cpu") -> torch.nn.Module:
 def main():
     verbose = True
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
-    detector_id = "CNNDetector"
-    #dataset_id = "MSCOCO2014_filtered_val"
+    detector_id = "CLIPDetector"
+    # dataset_id = "MSCOCO2014_filtered_val"
     dataset_id = "StableDiffusion2"
     compression = None  # 100 - 10 (most compressed) or None
 

@@ -4,3 +4,6 @@
 [submodule "detectors/CNNDetection"]
 	path = detectors/CNNDetection
 	url = git@github.com:tunasoup/CNNDetection.git
+[submodule "detectors/UniversalFakeDetect"]
+	path = detectors/UniversalFakeDetect
+	url = git@github.com:tunasoup/UniversalFakeDetect.git
