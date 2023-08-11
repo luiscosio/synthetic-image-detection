@@ -43,12 +43,13 @@ Stable Diffusion 2.1 and LDM can be used to create synthetic images from prompts
 <details close>
 <summary>Example datasets</summary>
 
-| Name & download location                                                                           | Class | 
-|:---------------------------------------------------------------------------------------------------|:------|
-| [COCO 2014 validation](https://cocodataset.org/#download)                                          | Real  |
-| [Midjourney v5.1](https://www.kaggle.com/datasets/iraklip/modjourney-v51-cleaned-data)             | Fake  | 
-| [StyleGAN2](https://github.com/peterwang512/CNNDetection) (CNNDetection)                           | Fake  |
-| [VQGAN](https://github.com/CompVis/taming-transformers) (Taming Transformers)                      | Fake  |
-| [GANs and DMs](https://github.com/grip-unina/DMimageDetection) (DMimageDetection)                  | Fake  |
+| Name & download location                                                               | Class | 
+|:---------------------------------------------------------------------------------------|:------|
+| [COCO 2014 validation](https://cocodataset.org/#download)                              | Real  |
+| [HDR/SDR](https://lesc.dinfo.unifi.it/materials/datasets_en.html)                      | Real  |
+| [Midjourney v5.1](https://www.kaggle.com/datasets/iraklip/modjourney-v51-cleaned-data) | Fake  | 
+| [StyleGAN2](https://github.com/peterwang512/CNNDetection) (CNNDetection)               | Fake  |
+| [VQGAN](https://github.com/CompVis/taming-transformers) (Taming Transformers)          | Fake  |
+| [GANs and DMs](https://github.com/grip-unina/DMimageDetection) (DMimageDetection)      | Fake  |
 
 </details>
