@@ -4,7 +4,7 @@ from typing import List, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFilter
 from tqdm import tqdm
 
 
@@ -59,25 +59,30 @@ def plot_resolutions(data_dir: Path) -> None:
     plt.show()
 
 
-def plot_spectra(data_dirs: List[Path], crop_sizes: Optional[List[int]] = None, show_example: bool = True) -> None:
+def plot_spectra(data_dirs: List[Path],
+                 crop_sizes: Optional[List[int]] = None,
+                 apply_filter: bool = False,
+                 show_example: bool = True) -> None:
     # Plot average spectras of each directory side by side, with example image on top of them
     if isinstance(crop_sizes, List):
         assert len(data_dirs) == len(crop_sizes)
     rows = 2 if show_example else 1
     fig, axs = plt.subplots(rows, len(data_dirs), squeeze=False)
     for i, data_dir in enumerate(data_dirs):
-        avg_spectrum, img = get_mean_spectrum(data_dir, crop_size=crop_sizes[i])
+        avg_spectrum, img = get_mean_spectrum(data_dir, crop_size=crop_sizes[i], apply_filter=apply_filter)
         if show_example:
             axs[0, i].imshow(img, cmap="gray")
-            axs[1, i].imshow(avg_spectrum, cmap="gray")
+            axs[1, i].imshow(avg_spectrum, cmap="turbo")
         else:
-            axs[0, i].imshow(avg_spectrum, cmap="gray")
+            axs[0, i].imshow(avg_spectrum, cmap="turbo")
 
     fig.tight_layout()
     plt.show()
 
 
-def get_mean_spectrum(data_dir: Path, crop_size: Optional[int] = None) -> (np.ndarray, np.ndarray):
+def get_mean_spectrum(data_dir: Path,
+                      crop_size: Optional[int] = None,
+                      apply_filter: bool = False) -> (np.ndarray, np.ndarray):
     # Get the mean spectrum of all images in the given directory and optionally crop them to a square
     all_ffts = []
     example_img = None
@@ -92,7 +97,11 @@ def get_mean_spectrum(data_dir: Path, crop_size: Optional[int] = None) -> (np.nd
                 continue
             img = img.crop((w // 2 - crop_size // 2, h // 2 - crop_size // 2, w // 2 + crop_size // 2, h // 2 + crop_size // 2))
 
-        img = np.array(img)
+        if apply_filter:
+            img_med = img.filter(ImageFilter.MedianFilter(3))
+            img = np.abs(np.array(img) - np.array(img_med))
+        else:
+            img = np.array(img)
         img_fft = fourier_transform(img, plot=False)
         all_ffts.append(img_fft)
         if example_img is None:
@@ -114,8 +123,8 @@ def fourier_transform(img: np.ndarray, plot: bool = False) -> np.ndarray:
     img_fft = np.log(np.abs(img_fft) + np.finfo(float).eps)
     if plot:
         fig, ax = plt.subplots(1, 2)
-        ax[0].imshow(img, cmap="gray")
-        ax[1].imshow(img_fft, cmap="gray")
+        ax[0].imshow(img, cmap="turbo")
+        ax[1].imshow(img_fft)
         plt.show()
     return img_fft
 
