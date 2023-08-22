@@ -1,3 +1,4 @@
+import io
 import json
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
@@ -62,6 +63,7 @@ def plot_resolutions(data_dir: Path) -> None:
 def plot_spectra(data_dict: Dict[str, Path],
                  crop_size: Optional[Union[List[int], int]] = None,
                  apply_filter: bool = False,
+                 jpeg_quality: Optional[int] = None,
                  show_example: bool = False,
                  same_intensity: bool = False,
                  fig_size: Tuple[float, float] = (10, 5)) -> None:
@@ -74,6 +76,7 @@ def plot_spectra(data_dict: Dict[str, Path],
         data_dict: Dictionary containing the dataset name as key and the path to the directory as value
         crop_size: Size of the center-crop to apply on each dataset, List for different sizes, None for no cropping
         apply_filter: Whether to apply a high-pass filtering on the images
+        jpeg_quality: Optional JPEG quality to apply to the images
         show_example: Whether to show example images on top of the spectra
         same_intensity: Whether to normalize the spectra to the same colormap intensity range
         fig_size: Optional size of the figure (width, height)
@@ -100,7 +103,8 @@ def plot_spectra(data_dict: Dict[str, Path],
     avg_spectra = []
     example_images = []
     for i, data_dir in enumerate(data_dict.values()):
-        avg_spectrum, img = get_mean_spectrum(data_dir, crop_size=crop_sizes[i], apply_filter=apply_filter)
+        avg_spectrum, img = get_mean_spectrum(data_dir, crop_size=crop_sizes[i],
+                                              apply_filter=apply_filter, jpeg_quality=jpeg_quality)
         avg_spectra.append(avg_spectrum)
         example_images.append(img)
 
@@ -129,7 +133,8 @@ def plot_spectra(data_dict: Dict[str, Path],
 
 def get_mean_spectrum(data_dir: Path,
                       crop_size: Optional[int] = None,
-                      apply_filter: bool = False) -> (np.ndarray, np.ndarray):
+                      apply_filter: bool = False,
+                      jpeg_quality: Optional[int] = None) -> (np.ndarray, np.ndarray):
     """
     Get the mean Fourier spectrum of all images in the given directory and an example preprocessed image.
     All images are preprocessed by grayscaling, and optionally center-cropping them to a square and
@@ -139,6 +144,7 @@ def get_mean_spectrum(data_dir: Path,
         data_dir: Directory containing the images
         crop_size: Optional square center-crop size in pixels, if None, no cropping is done
         apply_filter: Boolean indicating whether to apply a high-pass filter to the images
+        jpeg_quality: Optional JPEG quality to use for compressing the images, if None, no compression is done
 
     Returns:
         The mean Fourier spectrum of all images in the directory and an example preprocessed image
@@ -147,6 +153,13 @@ def get_mean_spectrum(data_dir: Path,
     example_img = None
     for img_path in tqdm(list(data_dir.iterdir()), desc="Calculating FFTs", unit="img"):
         img = Image.open(img_path).convert("L")
+
+        # JPEG compression
+        if jpeg_quality is not None:
+            img_bytes = io.BytesIO()
+            img.save(img_bytes, format="JPEG", quality=jpeg_quality)
+            img_bytes.seek(0)
+            img = Image.open(img_bytes)
 
         # Center-cropping
         if isinstance(crop_size, int):
@@ -212,7 +225,8 @@ def main():
         "VQGAN": vqgan_dir,
         "DALL·E 2": dalle2_dir,
     }
-    plot_spectra(data_dict, crop_size=[256], apply_filter=True, show_example=False, same_intensity=True, fig_size=(18, 4.3))
+    plot_spectra(data_dict, crop_size=[256], apply_filter=True, show_example=False,
+                 same_intensity=True, fig_size=(18, 4.3), jpeg_quality=None)
 
 
 if __name__ == "__main__":
