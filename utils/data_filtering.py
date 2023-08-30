@@ -119,11 +119,11 @@ def filter_midjourney_data(data: pd.DataFrame,
     Returns:
         DataFrame with filtered rows and a reduced number of columns
     """
-    # Adjustable filters
+    # Adjustable filters, values must be in a list or the specific filter is ignored
     # allowed_versions = ["4", "4.0", "5", "5.0", "5.1"]
     allowed_versions = ["5.1"]
-    required_words = ["photo"]  # Prompt having ANY of these subwords is kept (unless blocked)
-    # Prompt having ANY of these subwords is removed
+    required_words = ["photo"]  # Prompt having ANY of these subwords is kept (unless blocked), case-insensitive
+    # Prompt having ANY of these subwords is removed, case-insensitive
     blocked_words = ["cartoon", "comic", "painting", "drawing", "animation", "sprite", "drawn", "sketch", "anime"]
     allowed_ratios = ["1:1"]  # Multiples are discarded, such as 2:2 and 3:3
     max_characters = 1600  # Prompts + parameters with more characters are removed
@@ -144,7 +144,8 @@ def filter_midjourney_data(data: pd.DataFrame,
     # Version filter
     # Default version is 5.1
     data["version"] = data["version"].fillna("5.1").astype(str)
-    data = data[data["version"].isin(allowed_versions)]
+    if isinstance(allowed_versions, list) and len(allowed_versions) > 0:
+        data = data[data["version"].isin(allowed_versions)]
     print(f"Version filter removed {data_length - len(data)} rows")
     data_length = len(data)
 
@@ -155,14 +156,17 @@ def filter_midjourney_data(data: pd.DataFrame,
     data.loc[data["aspect"].isnull(), "aspect"] = data.loc[data["aspect"].isnull(), "Content"].str.extract(reg, expand=False)
     # Default aspect ratio is 1:1
     data["aspect"] = data["aspect"].fillna("1:1").astype(str)
-    data = data[data["aspect"].isin(allowed_ratios)]
+    if isinstance(allowed_ratios, list) and len(allowed_ratios) > 0:
+        data = data[data["aspect"].isin(allowed_ratios)]
     print(f"Aspect ratio filter removed {data_length - len(data)} rows")
     data_length = len(data)
 
     # Prompt filter
     data["clean_prompts"] = data["clean_prompts"].fillna("None").astype(str)
-    data = data[data["clean_prompts"].str.contains("|".join(required_words), case=False)]
-    data = data[~data["clean_prompts"].str.contains("|".join(blocked_words), case=False)]
+    if isinstance(required_words, list) and len(required_words) > 0:
+        data = data[data["clean_prompts"].str.contains("|".join(required_words), case=False)]
+    if isinstance(blocked_words, list) and len(blocked_words) > 0:
+        data = data[~data["clean_prompts"].str.contains("|".join(blocked_words), case=False)]
     print(f"Prompt filter removed {data_length - len(data)} rows")
     data_length = len(data)
 
