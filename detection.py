@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, NamedTuple, Protocol, Type
+from typing import Dict, NamedTuple, Optional, Protocol, Type
 
 import torch
 from tqdm import tqdm
@@ -8,6 +8,7 @@ from dataset import get_dataloader
 from detectors.CNNDetection import Detector as CNNDetector
 from detectors.GAN_image_detection import Detector as EnsembleDetector
 from detectors.UniversalFakeDetect import Detector as CLIPDetector
+from detectors.DIRE import Detector as DIRE
 from utils import add_results_to_csv
 
 torch.manual_seed(42)
@@ -21,6 +22,7 @@ class Detector(Protocol):
 class DetectorTuple(NamedTuple):
     detector: Type[Detector]
     weights_path: Path
+    crop_size: Optional[int]
 
 
 class DatasetTuple(NamedTuple):
@@ -30,9 +32,10 @@ class DatasetTuple(NamedTuple):
 
 WEIGHTS = Path("weights")
 DETECTORS: Dict[str, DetectorTuple] = {
-    "CNNDetector": DetectorTuple(CNNDetector, WEIGHTS.joinpath("CNNDetector", "blur_jpg_prob0.1.pth")),
-    "EnsembleDetector": DetectorTuple(EnsembleDetector, WEIGHTS.joinpath("EnsembleDetector")),
-    "CLIPDetector": DetectorTuple(CLIPDetector, WEIGHTS.joinpath("CLIPDetector", "fc_weights.pth")),
+    "CNNDetector": DetectorTuple(CNNDetector, WEIGHTS.joinpath("CNNDetector", "blur_jpg_prob0.1.pth"), 224),
+    "EnsembleDetector": DetectorTuple(EnsembleDetector, WEIGHTS.joinpath("EnsembleDetector"), 224),
+    "CLIPDetector": DetectorTuple(CLIPDetector, WEIGHTS.joinpath("CLIPDetector", "fc_weights.pth"), 224),
+    "DIRE": DetectorTuple(DIRE, WEIGHTS.joinpath("DIRE", "lsun_adm.pth"), None),
 }
 
 DATA = Path("data")
@@ -40,6 +43,7 @@ DATASETS: Dict[str, DatasetTuple] = {
     "MSCOCO2014_val2014": DatasetTuple(DATA.joinpath("MSCOCO2014", "val2014"), 0),
     "MSCOCO2014_valsubset": DatasetTuple(DATA.joinpath("MSCOCO2014", "valsubset"), 0),
     "MSCOCO2014_filtered_val": DatasetTuple(DATA.joinpath("MSCOCO2014", "filtered_val"), 0),
+    "SDR": DatasetTuple(DATA.joinpath("HDR", "filtered_images"), 0),
     "StableDiffusion2": DatasetTuple(DATA.joinpath("StableDiffusion2", "filtered_val2014_ts50"), 1),
     "LDM": DatasetTuple(DATA.joinpath("LDM", "filtered_val2014_ts50"), 1),
     "Midjourney": DatasetTuple(DATA.joinpath("midjourney_v51_cleaned_data", "filtered_images"), 1),
@@ -51,38 +55,56 @@ DATASETS: Dict[str, DatasetTuple] = {
 }
 
 
-def load_detector(detector_id: str, device="cpu") -> torch.nn.Module:
+def load_detector(detector_id: str, device="cpu") -> (torch.nn.Module, Optional[int]):
     """
-    Initialize a detector with the given detector id and load its weights.
+    Initialize a detector with the given detector id and load its weights and crop size.
 
     Args:
         detector_id: Detector id
         device: Device to load the detector on
 
     Returns:
-        Detector
+        Detector and crop size
     """
-    detector_cls, weights_path = DETECTORS[detector_id]
+    detector_cls, weights_path, crop_size = DETECTORS[detector_id]
     detector = detector_cls()
     detector.load_pretrained(weights_path)
     detector.configure(device=device, training=False)
-    return detector
+    return detector, crop_size
+
+
+def count_parameters(model: torch.nn.Module) -> int:
+    """
+    Count the number of trainable parameters in a model.
+    Only works correctly for nested torch.nn.Modules, not for example Modules with Modules in a list.
+
+    Args:
+        model: Model
+
+    Returns:
+        Number of trainable parameters
+    """
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
 def main():
     verbose = True
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
-    detector_id = "CLIPDetector"
-    # dataset_id = "MSCOCO2014_filtered_val"
-    dataset_id = "StableDiffusion2"
+    detector_id = "DIRE"
+    #dataset_id = "MSCOCO2014_filtered_val"
+    dataset_id = "SDR"
     compression = None  # 100 - 10 (most compressed) or None
 
+    print(f"Loading detector {detector_id} on device {device}...")
+    detector, crop_size = load_detector(detector_id, device)
+    parameter_count = count_parameters(detector)
+    parameter_count = parameter_count if parameter_count else "an unknown number of"
+    print(f"Loaded detector with {parameter_count} parameters")
+
     augmentations = {
+        "crop_size": crop_size,
         "compression": compression,
     }
-
-    print(f"Loading detector {detector_id} on device {device}...")
-    detector = load_detector(detector_id, device)
 
     data_dir, label = DATASETS[dataset_id]
     csv_subname = f"_compression{compression}" if compression is not None else ""
@@ -90,7 +112,7 @@ def main():
     csv_print = f" and creating a CSV in {csv_path}" if not csv_path.exists() else ""
 
     print(f"Loading dataset {data_dir}{csv_print}...")
-    dataloader = get_dataloader(data_dir, label=label, csv_path=csv_path, batch_size=32, augmentations=augmentations)
+    dataloader = get_dataloader(data_dir, label=label, csv_path=csv_path, batch_size=1, augmentations=augmentations)
     results = []
     scores = []
 

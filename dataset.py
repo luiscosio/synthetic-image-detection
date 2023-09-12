@@ -36,9 +36,11 @@ class ImageDataset(Dataset):
             create_dataset_csv(self._images, label, csv_path)
 
         transform_list = []
-        transform_list.append(transforms.CenterCrop(224))
         if isinstance(augmentations, Dict):
+            crop_size = augmentations.get("crop_size")
             compression = augmentations.get("compression")
+            if crop_size:
+                transform_list.append(transforms.CenterCrop(crop_size))
             if compression:
                 transform_list.append(transforms.Lambda(lambda x: jpeg_compression(x, quality=compression)))
 
