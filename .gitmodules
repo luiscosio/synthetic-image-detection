@@ -7,3 +7,6 @@
 [submodule "detectors/UniversalFakeDetect"]
 	path = detectors/UniversalFakeDetect
 	url = git@github.com:tunasoup/UniversalFakeDetect.git
+[submodule "detectors/DIRE"]
+	path = detectors/DIRE
+	url = git@github.com:tunasoup/DIRE.git
