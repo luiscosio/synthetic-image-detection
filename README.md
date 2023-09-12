@@ -13,6 +13,7 @@ therefore their performance or results may have been altered, but their key idea
 | [CNNDetection](https://github.com/PeterWang512/CNNDetection)              | Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International Public License                                                                                             |
 | [GAN-image-detection](https://github.com/polimi-ispl/GAN-image-detection) | GNU GENERAL PUBLIC LICENSE                                                                                                                                                         |
 | [UniversalFakeDetect](https://github.com/Yuheng-Li/UniversalFakeDetect)   | [Undefined](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/licensing-a-repository#choosing-the-right-license) |
+| [DIRE](https://github.com/ZhendongWang6/DIRE)                             | [Undefined](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/licensing-a-repository#choosing-the-right-license) |
 
 </details>
 
