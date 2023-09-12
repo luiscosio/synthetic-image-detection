@@ -69,13 +69,13 @@ def plot_spectra(data_dict: Dict[str, Path],
                  fig_size: Tuple[float, float] = (10, 5)) -> None:
     """
     Plot average Fourier spectras of each directory side by side.
-    Optionally, apply center-cropping and high-pass filtering to the images, and plot an example image on top of each
-    spectrum.
+    Optionally, apply center-cropping and filter by subtracting median denoised versions of the images, and plot an
+    example image on top of each spectrum.
 
     Args:
         data_dict: Dictionary containing the dataset name as key and the path to the directory as value
         crop_size: Size of the center-crop to apply on each dataset, List for different sizes, None for no cropping
-        apply_filter: Whether to apply a high-pass filtering on the images
+        apply_filter: Whether to filter the images
         jpeg_quality: Optional JPEG quality to apply to the images
         show_example: Whether to show example images on top of the spectra
         same_intensity: Whether to normalize the spectra to the same colormap intensity range
@@ -138,12 +138,12 @@ def get_mean_spectrum(data_dir: Path,
     """
     Get the mean Fourier spectrum of all images in the given directory and an example preprocessed image.
     All images are preprocessed by grayscaling, and optionally center-cropping them to a square and
-    high-pass filtering by subtracting a median filtered version.
+    filtering by subtracting median denoised versions.
 
     Args:
         data_dir: Directory containing the images
         crop_size: Optional square center-crop size in pixels, if None, no cropping is done
-        apply_filter: Boolean indicating whether to apply a high-pass filter to the images
+        apply_filter: Boolean indicating whether to filter the images
         jpeg_quality: Optional JPEG quality to use for compressing the images, if None, no compression is done
 
     Returns:
