@@ -9,7 +9,7 @@ from detectors.CNNDetection import Detector as CNNDetector
 from detectors.GAN_image_detection import Detector as EnsembleDetector
 from detectors.UniversalFakeDetect import Detector as CLIPDetector
 from detectors.DIRE import Detector as DIRE
-from utils import add_results_to_csv
+from utils.csv_operations import add_results_to_csv
 
 torch.manual_seed(42)
 
@@ -98,8 +98,8 @@ def main():
     print(f"Loading detector {detector_id} on device {device}...")
     detector, crop_size = load_detector(detector_id, device)
     parameter_count = count_parameters(detector)
-    parameter_count = parameter_count if parameter_count else "an unknown number of"
-    print(f"Loaded detector with {parameter_count} parameters")
+    parameter_count_str = f"at least {parameter_count}" if parameter_count else "an unknown number of"
+    print(f"Loaded detector with {parameter_count_str} parameters")
 
     augmentations = {
         "crop_size": crop_size,

@@ -7,7 +7,7 @@ from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 
-from utils import create_dataset_csv
+from utils.csv_operations import create_dataset_csv
 
 torch.manual_seed(42)
 
