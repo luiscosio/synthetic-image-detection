@@ -1,6 +1,6 @@
 import io
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 import torch
 from PIL import Image
@@ -47,10 +47,10 @@ class ImageDataset(Dataset):
         transform_list.append(transforms.ToTensor())  # (C x H x W)
         self._transform = transforms.Compose(transform_list)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._images)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx) -> (torch.Tensor, Tuple[str]):
         img_path = self._images[idx]
         img_name = img_path.name
         img = Image.open(img_path).convert("RGB")
