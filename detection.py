@@ -32,7 +32,8 @@ class DatasetTuple(NamedTuple):
 
 WEIGHTS = Path("weights")
 DETECTORS: Dict[str, DetectorTuple] = {
-    "CNNDetector": DetectorTuple(CNNDetector, WEIGHTS.joinpath("CNNDetector", "blur_jpg_prob0.1.pth"), 224),
+    "CNNDetector_p0.1": DetectorTuple(CNNDetector, WEIGHTS.joinpath("CNNDetector", "blur_jpg_prob0.1.pth"), 224),
+    "CNNDetector_p0.5": DetectorTuple(CNNDetector, WEIGHTS.joinpath("CNNDetector", "blur_jpg_prob0.5.pth"), 224),
     "EnsembleDetector": DetectorTuple(EnsembleDetector, WEIGHTS.joinpath("EnsembleDetector"), 224),
     "CLIPDetector": DetectorTuple(CLIPDetector, WEIGHTS.joinpath("CLIPDetector", "fc_weights.pth"), 224),
     "DIRE": DetectorTuple(DIRE, WEIGHTS.joinpath("DIRE", "lsun_adm.pth"), None),
@@ -45,12 +46,16 @@ DATASETS: Dict[str, DatasetTuple] = {
     "MSCOCO2014_filtered_val": DatasetTuple(DATA.joinpath("MSCOCO2014", "filtered_val"), 0),
     "SDR": DatasetTuple(DATA.joinpath("HDR", "filtered_images"), 0),
     "StableDiffusion2": DatasetTuple(DATA.joinpath("StableDiffusion2", "filtered_val2014_ts50"), 1),
+    "StableDiffusion2_ts20": DatasetTuple(DATA.joinpath("StableDiffusion2", "filtered_val2014_ts20"), 1),
+    "StableDiffusion2_ts80": DatasetTuple(DATA.joinpath("StableDiffusion2", "filtered_val2014_ts80"), 1),
     "LDM": DatasetTuple(DATA.joinpath("LDM", "filtered_val2014_ts50"), 1),
     "Midjourney": DatasetTuple(DATA.joinpath("midjourney_v51_cleaned_data", "filtered_images"), 1),
+    "BigGAN": DatasetTuple(DATA.joinpath("BigGAN"), 1),
     "StyleGAN2": DatasetTuple(DATA.joinpath("StyleGAN2", "filtered_images"), 1),
     "StyleGAN2r": DatasetTuple(DATA.joinpath("StyleGAN2", "all_real"), 0),
     "StyleGAN2f": DatasetTuple(DATA.joinpath("StyleGAN2", "all_fake"), 1),
     "VQGAN": DatasetTuple(DATA.joinpath("VQGAN", "filtered_images"), 1),
+    "Craiyon": DatasetTuple(DATA.joinpath("Craiyon"), 1),
     "DALLE2": DatasetTuple(DATA.joinpath("DALLE2", "DMimageDetection"), 1),
 }
 
