@@ -1,7 +1,8 @@
 from pathlib import Path
-from typing import List, Literal
+from typing import Dict, List, Literal, Optional
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from PIL import Image
 from sklearn.metrics import accuracy_score, average_precision_score, precision_recall_curve, roc_auc_score, roc_curve
@@ -15,7 +16,7 @@ def get_detector_values_and_truths(csv_paths: List[Path],
                                    sep: str = ",") -> (List[float], List[int]):
     """
     Get the values and ground truth labels from a CSV file for a detector.
-    The value can refer to a predicdted label or a float output by the detector.
+    The value can refer to a predicted label or a float output by the detector.
 
     Args:
         csv_paths: List of paths to the dataset CSV files
@@ -51,6 +52,89 @@ def calculate_detector_accuracy(csv_paths: List[Path], detector_id: str, sep: st
     """
     preds, gt = get_detector_values_and_truths(csv_paths, detector_id, "labels", sep=sep)
     return accuracy_score(gt, preds)
+
+
+def calculate_dataset_accuracies(csv_path: Path,
+                                 threshold: Optional[float] = None,
+                                 specific_detector: Optional[str] = None,
+                                 sep: str = ",") -> Dict[str, float]:
+    """
+    Calculate the accuracies from the results of detectors on a CSV file for a dataset.
+    By default, the labels column is used, but a custom threshold can be given to use the scores column.
+    Given a specific detector, only its accuracy is reported.
+
+    Args:
+        csv_path: Path to a dataset CSV file
+        threshold: Optional threshold for accuracy, already rounded labels column used if not given
+        specific_detector: Optional detector ID to filter only its results
+        sep: Separator for the CSV file
+
+    Returns:
+        A dictionary with detectors as keys and accuracies as values
+    """
+    accuracies = {}
+    df = pd.read_csv(csv_path, sep=sep)
+    detectors = [k.replace("_labels", "") for k in df.columns if "_labels" in k]
+
+    if isinstance(specific_detector, str):
+        if specific_detector in detectors:
+            detectors = [specific_detector]
+        else:
+            print(f"{specific_detector} not found in {csv_path.name} dataset, no accuracies calculated")
+            return dict()
+
+    labels = np.array(df["label"].to_list())
+    use_labels = False
+    if threshold is None:
+        use_labels = True
+
+    for detector in detectors:
+        values = df[detector + "_labels"] if use_labels else df[detector + "_scores"]
+        values = np.array(values.to_list())
+        if threshold is not None:
+            values = values >= threshold
+        accuracy = np.sum(values == labels) / len(values)
+        accuracies[detector] = accuracy
+    return accuracies
+
+
+def print_dataset_accuracies(csv_path: Path,
+                             threshold: Optional[float] = None,
+                             specific_detector: Optional[str] = None,
+                             sep: str = ",",) -> None:
+    """
+    Print the accuracies from the results of detectors on a CSV file for a dataset.
+    By default, the labels column is used, but a custom threshold can be given to use the scores column.
+    Given a specific detector, only its accuracy is reported.
+
+    Args:
+        csv_path: Path to a dataset CSV file
+        threshold: Optional threshold for accuracy, already rounded labels column used if not given
+        specific_detector: Optional detector ID to filter only its results
+        sep: Separator for the CSV file
+    """
+    accuracies = calculate_dataset_accuracies(csv_path, threshold, specific_detector, sep)
+    postfix = "using the _labels column" if threshold is None else f"with threshold {threshold}"
+    print(f"Accuracies on the {csv_path.name} dataset {postfix}")
+    for k, v in accuracies.items():
+        print(f"{k}: {v}")
+
+
+def calculate_balanced_threshold_from_roc(csv_paths: List[Path], detector_id: str, sep: str = ",") -> float:
+    """
+    Calculate a threshold for accuracy from a receiver operating characteristics curve.
+
+    Args:
+        csv_paths: List of paths to the dataset CSV files
+        detector_id: ID of the detector
+        sep: Separator for the CSV file:
+
+    Returns:
+        Balanced threshold from the ROC curve
+    """
+    scores, gt = get_detector_values_and_truths(csv_paths, detector_id, "scores", sep=sep)
+    fpr, tpr, thresholds = roc_curve(gt, scores)
+    return thresholds[np.argmax(tpr - fpr)]
 
 
 def calculate_detector_auc(csv_paths: List[Path], detector_id: str, sep: str = ",") -> float:
@@ -181,19 +265,23 @@ def calculate_clip_score_from_csv(csv_path: Path, image_dir: Path, column: str =
 
 
 def main():
-    csv_path = Path("csvs", "PartiPrompts.csv")
-    image_dir = Path("data", "StableDiffusion2", "PartiPrompts")
-    # score = calculate_clip_score_from_csv(csv_path, image_dir, column="Prompt", sep=";")
-    # print(score)
+    csv_path1 = Path("csvs", "DALLE2.csv")
+    csv_path2 = Path("csvs", "MSCOCO2014_filtered_val.csv")
+    csv_path3 = Path("csvs", "SDR.csv")
+    csv_path4 = Path("csvs", "VQGAN.csv")
+    csv_paths = [csv_path1, csv_path2]
 
-    csv_paths = [Path("csvs", "MSCOCO2014_filtered_val.csv"), Path("csvs", "StyleGAN2.csv")]
-    csv_paths = [Path("csvs", "StyleGAN2r.csv"), Path("csvs", "StyleGAN2f.csv")]
-    # detector_id = "EnsembleDetector"
-    detector_id = "CNNDetector"
+    detector_id = "CNNDetector_p0.1"
+
     # print(f"acc: {calculate_detector_accuracy(csv_paths, detector_id)}")
-    plot_auc_and_ap(csv_paths, detector_id)
-    print(f"aucroc: {calculate_detector_auc(csv_paths, detector_id)}")
-    print(f"ap: {calculate_detector_average_precision(csv_paths, detector_id)}")
+    # plot_auc_and_ap(csv_paths, detector_id)
+    # print(f"aucroc: {calculate_detector_auc(csv_paths, detector_id)}")
+    # print(f"ap: {calculate_detector_average_precision(csv_paths, detector_id)}")
+    print_dataset_accuracies(csv_path1, None, detector_id)
+    print_dataset_accuracies(csv_path2, None, detector_id)
+    th = calculate_balanced_threshold_from_roc(csv_paths, detector_id)
+    print_dataset_accuracies(csv_path1, th, detector_id)
+    print_dataset_accuracies(csv_path2, th, detector_id)
 
 
 if __name__ == "__main__":
