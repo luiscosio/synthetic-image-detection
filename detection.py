@@ -1,14 +1,15 @@
 from pathlib import Path
 from typing import Dict, NamedTuple, Optional, Protocol, Type
 
+import numpy as np
 import torch
 from tqdm import tqdm
 
 from dataset import get_dataloader
 from detectors.CNNDetection import Detector as CNNDetector
+from detectors.DIRE import Detector as DIRE
 from detectors.GAN_image_detection import Detector as EnsembleDetector
 from detectors.UniversalFakeDetect import Detector as CLIPDetector
-from detectors.DIRE import Detector as DIRE
 from utils.csv_operations import add_results_to_csv
 
 torch.manual_seed(42)
@@ -32,10 +33,12 @@ class DatasetTuple(NamedTuple):
 
 WEIGHTS = Path("weights")
 DETECTORS: Dict[str, DetectorTuple] = {
-    "CNNDetector_p0.1": DetectorTuple(CNNDetector, WEIGHTS.joinpath("CNNDetector", "blur_jpg_prob0.1.pth"), 224),
-    "CNNDetector_p0.5": DetectorTuple(CNNDetector, WEIGHTS.joinpath("CNNDetector", "blur_jpg_prob0.5.pth"), 224),
-    "EnsembleDetector": DetectorTuple(EnsembleDetector, WEIGHTS.joinpath("EnsembleDetector"), 224),
-    "CLIPDetector": DetectorTuple(CLIPDetector, WEIGHTS.joinpath("CLIPDetector", "fc_weights.pth"), 224),
+    "CNNDetector_p0.1_crop": DetectorTuple(CNNDetector, WEIGHTS.joinpath("CNNDetector", "blur_jpg_prob0.1.pth"), 224),
+    "CNNDetector_p0.1": DetectorTuple(CNNDetector, WEIGHTS.joinpath("CNNDetector", "blur_jpg_prob0.1.pth"), None),
+    "CNNDetector_p0.5_crop": DetectorTuple(CNNDetector, WEIGHTS.joinpath("CNNDetector", "blur_jpg_prob0.5.pth"), 224),
+    "CNNDetector_p0.5": DetectorTuple(CNNDetector, WEIGHTS.joinpath("CNNDetector", "blur_jpg_prob0.5.pth"), None),
+    "EnsembleDetector": DetectorTuple(EnsembleDetector, WEIGHTS.joinpath("EnsembleDetector"), None),
+    "CLIPDetector_crop": DetectorTuple(CLIPDetector, WEIGHTS.joinpath("CLIPDetector", "fc_weights.pth"), 224),
     "DIRE": DetectorTuple(DIRE, WEIGHTS.joinpath("DIRE", "lsun_adm.pth"), None),
 }
 
@@ -120,18 +123,38 @@ def main():
     dataloader = get_dataloader(data_dir, label=label, csv_path=csv_path, batch_size=1, augmentations=augmentations)
     results = []
     scores = []
+    name_list = []
+    times = []
 
+    # starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
     for (images, names) in tqdm(dataloader, desc="Performing detection", unit="batch"):
+        name_list += names
         with torch.no_grad():
             images = images.contiguous().to(device=device)
+            # starter.record()
             batch_labels, batch_scores = detector(images)
+            # ender.record()
+            # torch.cuda.synchronize()
+            # times.append(starter.elapsed_time(ender))
             results.extend(batch_labels.flatten().tolist())
             scores.extend(batch_scores.flatten().tolist())
+
+    # Print inference speeds, skip first batches from calculations due to GPU warm-up
+    # times = np.array(times)
+    # nskip = 10
+    # print(f"mean: {np.mean(times)}")
+    # print(f"min: {np.min(times)}")
+    # print(f"first: {times[0]}")
+    # print(f"mean without first {nskip}: {np.mean(times[nskip:])}")
 
     if verbose:
         print(f"Number of images: {len(results)}")
         print(f"Number of alleged fake images: {sum(results)}")
 
+    # print(scores)
+    # for score, name in zip(scores, name_list):
+    #     print(f"{name} synthetic: {round(score, 4):.6f}")
+    print(f"Mean: {np.mean(scores)}")
     print("Saving results to CSV...")
     add_results_to_csv(csv_path, detector_id, results, scores)
 
