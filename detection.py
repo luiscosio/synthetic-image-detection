@@ -4,6 +4,7 @@ from typing import Dict, NamedTuple, Optional, Protocol, Type
 import numpy as np
 import torch
 from tqdm import tqdm
+from torchvision.transforms import InterpolationMode
 
 from dataset import get_dataloader
 from detectors.CNNDetection import Detector as CNNDetector
@@ -38,6 +39,7 @@ DETECTORS: Dict[str, DetectorTuple] = {
     "CNNDetector_p0.5_crop": DetectorTuple(CNNDetector, WEIGHTS.joinpath("CNNDetector", "blur_jpg_prob0.5.pth"), 224),
     "CNNDetector_p0.5": DetectorTuple(CNNDetector, WEIGHTS.joinpath("CNNDetector", "blur_jpg_prob0.5.pth"), None),
     "EnsembleDetector": DetectorTuple(EnsembleDetector, WEIGHTS.joinpath("EnsembleDetector"), None),
+    "EnsembleDetector_crop": DetectorTuple(EnsembleDetector, WEIGHTS.joinpath("EnsembleDetector"), 224),
     "CLIPDetector_crop": DetectorTuple(CLIPDetector, WEIGHTS.joinpath("CLIPDetector", "fc_weights.pth"), 224),
     "DIRE": DetectorTuple(DIRE, WEIGHTS.joinpath("DIRE", "lsun_adm.pth"), None),
 }
@@ -102,6 +104,7 @@ def main():
     #dataset_id = "MSCOCO2014_filtered_val"
     dataset_id = "SDR"
     compression = None  # 100 - 10 (most compressed) or None
+    resize = (224, InterpolationMode.BILINEAR)  # (size, method), None or size=0 for no resizing
 
     print(f"Loading detector {detector_id} on device {device}...")
     detector, crop_size = load_detector(detector_id, device)
@@ -110,12 +113,15 @@ def main():
     print(f"Loaded detector with {parameter_count_str} parameters")
 
     augmentations = {
+        "resize": resize,
         "crop_size": crop_size,
         "compression": compression,
     }
 
     data_dir, label = DATASETS[dataset_id]
-    csv_subname = f"_compression{compression}" if compression is not None else ""
+    csv_subname = ""
+    csv_subname += f"_rs{resize[0]}_{resize[1].value}" if resize and resize[0] else ""
+    csv_subname += f"_compression{compression}" if compression is not None else ""
     csv_path = Path("csvs",  f"{dataset_id}{csv_subname}.csv")
     csv_print = f" and creating a CSV in {csv_path}" if not csv_path.exists() else ""
 

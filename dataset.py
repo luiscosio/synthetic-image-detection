@@ -37,8 +37,11 @@ class ImageDataset(Dataset):
 
         transform_list = []
         if isinstance(augmentations, Dict):
+            resize = augmentations.get("resize")
             crop_size = augmentations.get("crop_size")
             compression = augmentations.get("compression")
+            if resize and resize[0]:
+                transform_list.append(transforms.Resize(size=resize[0], interpolation=resize[1], antialias=True))
             if crop_size:
                 transform_list.append(transforms.CenterCrop(crop_size))
             if compression:
