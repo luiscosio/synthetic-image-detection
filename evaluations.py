@@ -57,6 +57,7 @@ def calculate_detector_accuracy(csv_paths: List[Path], detector_id: str, sep: st
 def calculate_detector_accuracies(csv_path: Union[Path, List[Path]],
                                   detector_id: str,
                                   threshold: Optional[float] = None,
+                                  csv_filter: Optional[str] = None,
                                   sep: Union[str, List[str]] = ",") -> Dict[str, float]:
     """
     Calculate the separate accuracies for a detector from the CSV dataset result files.
@@ -67,6 +68,7 @@ def calculate_detector_accuracies(csv_path: Union[Path, List[Path]],
         csv_path: Path to a directory with CSV files, single CSV file, or a list of them
         detector_id: ID of the detector
         threshold: Optional threshold for accuracy, already rounded labels column used if not given
+        csv_filter: Only the CSV files with the given pattern in their names are included
         sep: Separator for CSV files, or a list of them if they differ
 
     Returns:
@@ -80,6 +82,11 @@ def calculate_detector_accuracies(csv_path: Union[Path, List[Path]],
             csv_paths = [csv_path]
     else:
         csv_paths = csv_path
+
+    if csv_filter:
+        csv_paths = [path for path in csv_paths if csv_filter in path.name]
+    if not csv_paths:
+        raise ValueError("Did not find any CSV files matching the inputs")
 
     if isinstance(sep, str):
         sep = [sep] * len(csv_paths)
@@ -170,6 +177,7 @@ def print_dataset_accuracies(csv_path: Path,
 def print_detector_accuracies(csv_path: Union[Path, List[Path]],
                               detector_id: str,
                               threshold: Optional[float] = None,
+                              csv_filter: Optional[str] = None,
                               sep: Union[str, List[str]] = ",") -> None:
     """
     Print the separate accuracies for a detector from the CSV dataset result files.
@@ -180,9 +188,15 @@ def print_detector_accuracies(csv_path: Union[Path, List[Path]],
         csv_path: Path to a directory with CSV files, single CSV file, or a list of them
         detector_id: ID of the detector
         threshold: Optional threshold for accuracy, already rounded labels column used if not given
+        csv_filter: Only the CSV files with the given pattern in their names are included
         sep: Separator for CSV files, or a list of them if they differ
     """
-    accuracies = calculate_detector_accuracies(csv_path, detector_id, threshold, sep)
+    try:
+        accuracies = calculate_detector_accuracies(csv_path, detector_id, threshold, csv_filter, sep)
+    except ValueError as e:
+        print(e)
+        return
+
     if not accuracies:
         print(f"No results found for {detector_id} on the given datasets")
         return None
@@ -345,13 +359,14 @@ def main():
     csv_path4 = Path("csvs", "VQGAN.csv")
     csv_paths = [csv_path1, csv_path2]
 
-    detector_id = "EnsembleDetector"
+    detector_id = "CLIPDetector"
 
     # print(f"acc: {calculate_detector_accuracy(csv_paths, detector_id)}")
     # plot_auc_and_ap(csv_paths, detector_id)
     # print(f"aucroc: {calculate_detector_auc(csv_paths, detector_id)}")
     # print(f"ap: {calculate_detector_average_precision(csv_paths, detector_id)}")
-    print_detector_accuracies(csv_dir, detector_id)
+    print_detector_accuracies(csv_dir, detector_id, csv_filter="rs224_bilinear")
+    # print_dataset_accuracies(csv_path1)
     # print_dataset_accuracies(csv_path1, None, detector_id)
     # print_dataset_accuracies(csv_path2, None, detector_id)
     # th = calculate_balanced_threshold_from_roc(csv_paths, detector_id)
