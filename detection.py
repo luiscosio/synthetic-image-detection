@@ -104,7 +104,7 @@ def main():
     #dataset_id = "MSCOCO2014_filtered_val"
     dataset_id = "SDR"
     compression = None  # 100 - 10 (most compressed) or None
-    resize = (224, InterpolationMode.BILINEAR)  # (size, method), None or size=0 for no resizing
+    resize = ((224, 224), InterpolationMode.BILINEAR)  # (size, method), None or size=0 for no resizing
 
     print(f"Loading detector {detector_id} on device {device}...")
     detector, crop_size = load_detector(detector_id, device)
@@ -120,10 +120,15 @@ def main():
 
     data_dir, label = DATASETS[dataset_id]
     csv_subname = ""
-    csv_subname += f"_rs{resize[0]}_{resize[1].value}" if resize and resize[0] else ""
+    resize_str = ""
+    if resize and isinstance(resize[0], int):
+        resize_str = f"_rs{resize[0]}_{resize[1].value}"
+    elif resize and isinstance(resize[0], tuple):
+        resize_str = f"_rs{resize[0][0]}{resize[0][1]}_{resize[1].value}"
+    csv_subname += resize_str if resize_str else ""
     csv_subname += f"_compression{compression}" if compression is not None else ""
     csv_path = Path("csvs",  f"{dataset_id}{csv_subname}.csv")
-    csv_print = f" and creating a CSV in {csv_path}" if not csv_path.exists() else ""
+    csv_print = f" and creating a CSV in {csv_path}" if not csv_path.exists() else f" and outputs will be saved to {csv_path}"
 
     print(f"Loading dataset {data_dir}{csv_print}...")
     dataloader = get_dataloader(data_dir, label=label, csv_path=csv_path, batch_size=1, augmentations=augmentations)
