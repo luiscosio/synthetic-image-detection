@@ -202,9 +202,61 @@ def print_detector_accuracies(csv_path: Union[Path, List[Path]],
         return None
 
     postfix = "using the _labels column" if threshold is None else f"with threshold {threshold}"
+    postfix += f' and "{csv_filter}" CSV filter' if csv_filter else ""
     print(f"Accuracies for {detector_id} {postfix}")
     for k, v in accuracies.items():
         print(f"{k}: {v}")
+
+
+def print_latex_accuracy_table(datasets: Dict[str, Union[Path, List[Path]]],
+                               detectors: Dict[str, str],
+                               thresholds: Optional[List[float]] = None,
+                               sep: str = ",") -> None:
+    """
+    Print a LaTeX table contents with the accuracies of given detectors on given datasets.
+    Each given dataset is expected to have results for each given detector.
+
+    Multiple variations of a dataset can be given as a list, causing the use of multicolumns.
+    The variations are in the order they are input, their distinct variation property is not shown.
+    Each given dataset should have the same number of variations.
+
+    Args:
+        datasets: Dictionary of printed dataset names as keys and (lists of) Paths as values
+        detectors: Dictionary of printed detector names as keys and IDs as values
+        thresholds: Optional thresholds for accuracy, in the same order as the matching detectors
+        sep: Separator for the CSV files, expected to be the same for all
+    """
+    if thresholds is None:
+        thresholds = [None] * len(detectors)
+
+    # Check how many columns for each detector
+    multicolumn = 1
+    for _, data_paths in datasets.items():
+        if isinstance(data_paths, list):
+            multicolumn = len(data_paths)
+        break
+
+    # Set the header row
+    table = "\hline\n"
+    for detector_name in detectors.keys():
+        if multicolumn > 1:
+            table += f" & \multicolumn{{{multicolumn}}}{{c|}}{{{detector_name}}}"
+        else:
+            table += f" & {{{detector_name}}}"
+    table += "\\\\\n\hline"
+
+    # Set a dataset's accuracies on one row, with each detector making up a column for each dataset variation
+    for data_name, data_paths in datasets.items():
+        table += f"\n{data_name.ljust(10)} "
+        for idx, (detector_name, detector_id) in enumerate(detectors.items()):
+            if isinstance(data_paths, Path):
+                data_paths = [data_paths]
+            for data_path in data_paths:
+                accs = calculate_dataset_accuracies(data_path, thresholds[idx], detector_id, sep)
+                table += f"& {accs[detector_id]}".ljust(10)
+        table += "\\\\"
+
+    print(table)
 
 
 def calculate_balanced_threshold_from_roc(csv_paths: List[Path], detector_id: str, sep: str = ",") -> float:
@@ -372,6 +424,28 @@ def main():
     # th = calculate_balanced_threshold_from_roc(csv_paths, detector_id)
     # print_dataset_accuracies(csv_path1, th, detector_id)
     # print_dataset_accuracies(csv_path2, th, detector_id)
+
+    datasets = {
+        # "COCO": csv_dir.joinpath("MSCOCO2014_filtered_val.csv"),
+        # "SDR": csv_dir.joinpath("SDR.csv"),
+        "SDR": [csv_dir.joinpath("SDR_rs224_bilinear.csv"), csv_dir.joinpath("SDR_rs224_bicubic.csv")],
+        # "BigGAN": csv_dir.joinpath("BigGAN.csv"),
+        # "StyleGAN2": csv_dir.joinpath("StyleGAN2.csv"),
+        # "VQGAN": csv_dir.joinpath("VQGAN.csv"),
+        "VQGAN": [csv_dir.joinpath("VQGAN_rs224_bilinear.csv"), csv_dir.joinpath("VQGAN_rs224_bicubic.csv")],
+        # "Craiyon": csv_dir.joinpath("Craiyon.csv"),
+        # "SD2": csv_dir.joinpath("StableDiffusion2.csv"),
+        # "DALL·E 2": csv_dir.joinpath("DALLE2.csv"),
+        # "Midjourney": csv_dir.joinpath("Midjourney.csv"),
+    }
+
+    detectors = {
+        "CNNDet\(_{0.1}\)": "CNNDetector_p0.1_crop",
+        "CNNDet\(_{0.5}\)": "CNNDetector_p0.5_crop",
+        "EnsembleDet": "EnsembleDetector",
+        "CLIPDet": "CLIPDetector_crop",
+    }
+    # print_latex_accuracy_table(datasets, detectors)
 
 
 if __name__ == "__main__":
