@@ -208,33 +208,44 @@ def print_detector_accuracies(csv_path: Union[Path, List[Path]],
         print(f"{k}: {v}")
 
 
-def print_latex_accuracy_table(datasets: Dict[str, Union[Path, List[Path]]],
+def print_latex_accuracy_table(datasets: Dict[str, Path],
                                detectors: Dict[str, str],
                                thresholds: Optional[List[float]] = None,
+                               variations: Optional[List[str]] = None,
                                sep: str = ",") -> None:
     """
     Print a LaTeX table contents with the accuracies of given detectors on given datasets.
     Each given dataset is expected to have results for each given detector.
 
-    Multiple variations of a dataset can be given as a list, causing the use of multicolumns.
-    The variations are in the order they are input, their distinct variation property is not shown.
-    Each given dataset should have the same number of variations.
+    Multiple variations of datasets can be given through the variations argument, which adds the corresponding
+    postfix(es) to the dataset Paths. Given variations, even if only one, the original dataset results are not included,
+    unless one of the variations is an empty string.
+    The variations in the table are in the order they are input, their distinct variation property is not shown.
+    Each given dataset should have the same variations.
 
     Args:
-        datasets: Dictionary of printed dataset names as keys and (lists of) Paths as values
+        datasets: Dictionary of printed dataset names as keys and Paths as values
         detectors: Dictionary of printed detector names as keys and IDs as values
         thresholds: Optional thresholds for accuracy, in the same order as the matching detectors
+        variations: Optional list of variations, matching the augmentations in CSV filenames
         sep: Separator for the CSV files, expected to be the same for all
     """
     if thresholds is None:
         thresholds = [None] * len(detectors)
 
-    # Check how many columns for each detector
+    # Check how many columns for each detector and apply variations
     multicolumn = 1
-    for _, data_paths in datasets.items():
-        if isinstance(data_paths, list):
-            multicolumn = len(data_paths)
-        break
+    datasets_varied = {}
+    if isinstance(variations, list) and variations:
+        multicolumn = len(variations)
+        for k, v in datasets.items():
+            paths = []
+            for variation in variations:
+                path_variation = v.with_name(f"{v.stem}{variation}{v.suffix}")
+                paths.append(path_variation)
+            datasets_varied[k] = paths
+    else:
+        datasets_varied = datasets
 
     # Set the header row
     table = "\hline\n"
@@ -246,7 +257,7 @@ def print_latex_accuracy_table(datasets: Dict[str, Union[Path, List[Path]]],
     table += "\\\\\n\hline"
 
     # Set a dataset's accuracies on one row, with each detector making up a column for each dataset variation
-    for data_name, data_paths in datasets.items():
+    for data_name, data_paths in datasets_varied.items():
         table += f"\n{data_name.ljust(10)} "
         for idx, (detector_name, detector_id) in enumerate(detectors.items()):
             if isinstance(data_paths, Path):
@@ -274,6 +285,28 @@ def calculate_balanced_threshold_from_roc(csv_paths: List[Path], detector_id: st
     scores, gt = get_detector_values_and_truths(csv_paths, detector_id, "scores", sep=sep)
     fpr, tpr, thresholds = roc_curve(gt, scores)
     return thresholds[np.argmax(tpr - fpr)]
+
+
+def get_balanced_thresholds(csv_paths: List[Path], detectors: List[str], verbose: bool = False):
+    """
+    Get the balanced thresholds for each detector on the given CSV datasets.
+
+    Args:
+        csv_paths: List of paths to the dataset CSV files
+        detectors: List of detector IDs
+        verbose: Whether to print the thresholds
+
+    Returns:
+        List of thresholds in the same order as detectors
+    """
+    thresholds = []
+    for detector_id in detectors:
+        th = calculate_balanced_threshold_from_roc(csv_paths, detector_id)
+        thresholds.append(th)
+        if verbose:
+            print(f"{detector_id}: {th}")
+
+    return thresholds
 
 
 def calculate_detector_auc(csv_paths: List[Path], detector_id: str, sep: str = ",") -> float:
@@ -417,7 +450,7 @@ def main():
     # plot_auc_and_ap(csv_paths, detector_id)
     # print(f"aucroc: {calculate_detector_auc(csv_paths, detector_id)}")
     # print(f"ap: {calculate_detector_average_precision(csv_paths, detector_id)}")
-    print_detector_accuracies(csv_dir, detector_id, csv_filter="rs224_bilinear")
+    # print_detector_accuracies(csv_dir, detector_id, csv_filter="compression90")
     # print_dataset_accuracies(csv_path1)
     # print_dataset_accuracies(csv_path1, None, detector_id)
     # print_dataset_accuracies(csv_path2, None, detector_id)
@@ -426,18 +459,18 @@ def main():
     # print_dataset_accuracies(csv_path2, th, detector_id)
 
     datasets = {
-        # "COCO": csv_dir.joinpath("MSCOCO2014_filtered_val.csv"),
-        # "SDR": csv_dir.joinpath("SDR.csv"),
-        "SDR": [csv_dir.joinpath("SDR_rs224_bilinear.csv"), csv_dir.joinpath("SDR_rs224_bicubic.csv")],
-        # "BigGAN": csv_dir.joinpath("BigGAN.csv"),
-        # "StyleGAN2": csv_dir.joinpath("StyleGAN2.csv"),
-        # "VQGAN": csv_dir.joinpath("VQGAN.csv"),
-        "VQGAN": [csv_dir.joinpath("VQGAN_rs224_bilinear.csv"), csv_dir.joinpath("VQGAN_rs224_bicubic.csv")],
-        # "Craiyon": csv_dir.joinpath("Craiyon.csv"),
-        # "SD2": csv_dir.joinpath("StableDiffusion2.csv"),
-        # "DALL·E 2": csv_dir.joinpath("DALLE2.csv"),
-        # "Midjourney": csv_dir.joinpath("Midjourney.csv"),
+        "COCO": csv_dir.joinpath("MSCOCO2014_filtered_val.csv"),
+        "SDR": csv_dir.joinpath("SDR.csv"),
+        "BigGAN": csv_dir.joinpath("BigGAN.csv"),
+        "StyleGAN2": csv_dir.joinpath("StyleGAN2.csv"),
+        "VQGAN": csv_dir.joinpath("VQGAN.csv"),
+        "Craiyon": csv_dir.joinpath("Craiyon.csv"),
+        "SD2": csv_dir.joinpath("StableDiffusion2.csv"),
+        "DALL·E 2": csv_dir.joinpath("DALLE2.csv"),
+        "Midjourney": csv_dir.joinpath("Midjourney.csv"),
     }
+
+    variations = ["_compression60", "_compression90"]
 
     detectors = {
         "CNNDet\(_{0.1}\)": "CNNDetector_p0.1_crop",
@@ -445,7 +478,9 @@ def main():
         "EnsembleDet": "EnsembleDetector",
         "CLIPDet": "CLIPDetector_crop",
     }
-    # print_latex_accuracy_table(datasets, detectors)
+    ths = get_balanced_thresholds(csv_paths, list(detectors.values()), verbose=True)
+    # ths = []
+    print_latex_accuracy_table(datasets, detectors, thresholds=ths, variations=variations)
 
 
 if __name__ == "__main__":
