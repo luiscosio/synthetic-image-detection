@@ -230,8 +230,11 @@ def print_latex_accuracy_table(datasets: Dict[str, Path],
         variations: Optional list of variations, matching the augmentations in CSV filenames
         sep: Separator for the CSV files, expected to be the same for all
     """
-    if thresholds is None:
+    if not thresholds:
         thresholds = [None] * len(detectors)
+        th_str = ""
+    else:
+        th_str = f"\nThreshold & {' & '.join([f'{{{str(th)}}}' for th in thresholds])} \\\\\n\hline"
 
     # Check how many columns for each detector and apply variations
     multicolumn = 1
@@ -254,7 +257,9 @@ def print_latex_accuracy_table(datasets: Dict[str, Path],
             table += f" & \multicolumn{{{multicolumn}}}{{c|}}{{{detector_name}}}"
         else:
             table += f" & {{{detector_name}}}"
+
     table += "\\\\\n\hline"
+    table += th_str
 
     # Set a dataset's accuracies on one row, with each detector making up a column for each dataset variation
     for data_name, data_paths in datasets_varied.items():
