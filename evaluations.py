@@ -441,6 +441,24 @@ def calculate_clip_score_from_csv(csv_path: Path, image_dir: Path, column: str =
     return calculate_clip_score(prompts, image_paths)
 
 
+def print_score_differences(csv_path: Path, detector_1: str, detector_2: str, sep: str = ",") -> None:
+    """
+    Print statistics for the difference in scores between two different detectors for the same CSV dataset.
+
+    Args:
+        csv_path: Path to a dataset CSV file
+        detector_1: ID of a detector
+        detector_2: ID of a detector
+        sep: Separator for the CSV file
+    """
+    df = pd.read_csv(csv_path, sep=sep)
+    scores_1 = np.array(df[f"{detector_1}_scores"].to_list())
+    scores_2 = np.array(df[f"{detector_2}_scores"].to_list())
+    diff = np.abs(scores_1-scores_2)
+    print(f"Differences between {detector_1} and {detector_2} scores for {csv_path.name}"
+          f"\nmean: {np.mean(diff)}\nstd: {np.std(diff)}\nmax: {np.max(diff)}")
+
+
 def main():
     csv_dir = Path("csvs")
     csv_path1 = Path("csvs", "StyleGAN2.csv")
