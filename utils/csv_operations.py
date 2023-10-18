@@ -15,6 +15,7 @@ def create_dataset_csv(images: List, label: int, csv_path: Path, sep: str = ",")
         csv_path: Path to the csv file
         sep: Separator for the csv file
     """
+    csv_path.parent.mkdir(exist_ok=True, parents=True)
     df = pd.DataFrame(columns=["filename", "label"])
     df["filename"] = [img.name for img in images]
     df["label"] = label
