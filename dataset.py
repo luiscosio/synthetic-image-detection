@@ -22,8 +22,8 @@ class ImageDataset(Dataset):
 
         Args:
             data_dir: Path to the directory containing the images
-            label: Ground truth label, 0 for real image, 1 for synthesized
-            csv_path: Path a CSV file to save the image names and labels
+            label: Label for the images, 1 for synthetic, 0 for real
+            csv_path: Path to a CSV file for saving the image names and labels
             augmentations: Dictionary containing the augmentation parameters
         """
         self._dir = data_dir
@@ -86,14 +86,14 @@ def get_dataloader(data_dir: Path,
                    num_workers: int = 0,
                    ) -> DataLoader:
     """
-    Create a dataloader for the given directory.
+    Create a Dataloader for the given directory.
 
     Args:
         data_dir: Directory containing images
-        label: Label for the images
-        csv_path: Path a CSV file to save the image names and labels
+        label: Label for the images, 1 for synthetic, 0 for real
+        csv_path: Path to a CSV file for saving the image names and labels
         augmentations: Dictionary containing the augmentation parameters
-        batch_size: Batch size
+        batch_size: Number of images loaded at the same time
         num_workers: Number of workers
 
     Returns:
@@ -107,4 +107,3 @@ def get_dataloader(data_dir: Path,
         num_workers=num_workers,
     )
     return dataloader
-
