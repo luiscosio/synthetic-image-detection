@@ -26,8 +26,8 @@ def download_midjourney_data(csv_path: Path,
                              desired_size: Optional[int] = None,
                              validate_data: bool = True) -> None:
     """
-    Download the Midjourney v5.1 Cleaned Dataset with filters.
-    Download the CSV file from https://www.kaggle.com/datasets/iraklip/modjourney-v51-cleaned-data.
+    Download the Midjourney v5.1 Cleaned Dataset images with filters.
+    The CSV file needs to be downloaded first from https://www.kaggle.com/datasets/iraklip/modjourney-v51-cleaned-data.
     Code adapted from https://www.kaggle.com/code/iraklip/downloading-midjourney-v5-1-images.
 
     The CSV file contains metadata used to download the images from the internet.
@@ -142,7 +142,7 @@ def filter_midjourney_data(data: pd.DataFrame,
     data_length = len(data)
 
     # Version filter
-    # Default version is 5.1
+    # Default version in the CSV is 5.1
     data["version"] = data["version"].fillna("5.1").astype(str)
     if isinstance(allowed_versions, list) and len(allowed_versions) > 0:
         data = data[data["version"].isin(allowed_versions)]
@@ -466,34 +466,34 @@ def main():
     desired_size = 1000
     data_dir = Path("..", "data")
 
-    midjourney_csv = data_dir.joinpath("midjourney_v51_cleaned_data", "upscaled_prompts_df.csv")
-    dir_out = data_dir.joinpath("midjourney_v51_cleaned_data", "filtered_images")
-    csv_out = midjourney_csv.parent.joinpath("filtered_prompts.csv")
-    # test_midjourney_filters(midjourney_csv, csv_out)
-    # download_midjourney_data(csv_path=midjourney_csv, dir_out=dir_out,
-    #                         apply_filtering=True, csv_out=csv_out, desired_size=desired_size, validate_data=True)
+    # Given a downloaded CSV file, download midjourney images
+    # mj_csv = data_dir.joinpath("midjourney_v51_cleaned_data", "upscaled_prompts_df.csv")
+    # mj_dir_out = data_dir.joinpath("midjourney_v51_cleaned_data", "filtered_images")
+    # mj_csv_out = mj_csv.parent.joinpath("filtered_prompts.csv")
+    # download_midjourney_data(csv_path=mj_csv, dir_out=mj_dir_out,
+    #                          apply_filtering=True, csv_out=mj_csv_out, desired_size=desired_size, validate_data=True)
 
-    coco_dir = data_dir.joinpath("MSCOCO2014")
-    coco_data_dir = coco_dir.joinpath("val2014")
-    coco_json = coco_dir.joinpath("annotations", "captions_val2014.json")
-    coco_data_out = coco_dir.joinpath("filtered_val")
-    coco_csv_out = coco_dir.joinpath("filtered_val.csv")
+    # coco_dir = data_dir.joinpath("MSCOCO2014")
+    # coco_data_dir = coco_dir.joinpath("val2014")
+    # coco_json = coco_dir.joinpath("annotations", "captions_val2014.json")
+    # coco_data_out = coco_dir.joinpath("filtered_val")
+    # coco_csv_out = coco_dir.joinpath("filtered_val.csv")
     # create_coco_subset(coco_json, coco_data_dir, coco_data_out, coco_csv_out, desired_size=desired_size)
 
-    stylegan_dir = data_dir.joinpath("easy_to_spot_dataset", "stylegan2")
-    stylegan_data_out = data_dir.joinpath("StyleGAN2", "filtered_images")
+    # stylegan_dir = data_dir.joinpath("easy_to_spot_dataset", "stylegan2")
+    # stylegan_data_out = data_dir.joinpath("StyleGAN2", "filtered_images")
     # create_subset_from_structure(stylegan_dir, stylegan_data_out, desired_size=desired_size, class_subfolder="1_fake")
 
-    vqgan_dir = data_dir.joinpath("VQGAN")
-    vqgan_data_dir = vqgan_dir.joinpath("cin_k600_p1.0_a0.05_fid5.20")
-    vqgan_data_out = vqgan_dir.joinpath("filtered_images")
+    # vqgan_dir = data_dir.joinpath("VQGAN")
+    # vqgan_data_dir = vqgan_dir.joinpath("cin_k600_p1.0_a0.05_fid5.20")
+    # vqgan_data_out = vqgan_dir.joinpath("filtered_images")
     # create_subset_from_structure(vqgan_data_dir, vqgan_data_out, desired_size=desired_size)
 
-    hdr_dir = data_dir.joinpath("HDR")
-    hdr_data_dir = hdr_dir.joinpath("full")
-    hdr_data_out = hdr_dir.joinpath("filtered_images")
-    create_subset_from_structure(hdr_data_dir, hdr_data_out, desired_size=desired_size, class_subfolder="NAT/SDR*",
-                                 negative_subfolders=["SHAKING"])
+    # hdr_dir = data_dir.joinpath("HDR")
+    # hdr_data_dir = hdr_dir.joinpath("full")
+    # hdr_data_out = hdr_dir.joinpath("filtered_images")
+    # create_subset_from_structure(hdr_data_dir, hdr_data_out, desired_size=desired_size, class_subfolder="NAT/SDR*",
+    #                              negative_subfolders=["SHAKING"])
 
 
 if __name__ == "__main__":
