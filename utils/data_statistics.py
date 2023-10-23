@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 
 def print_coco_stats(captions_json: Path) -> None:
-    # Print and plot some statistics about the COCO dataset using the official captions json file
+    # Print and plot some statistics about the COCO dataset using the official captions JSON file
     with open(captions_json) as f:
         data = json.load(f)
 
@@ -42,18 +42,18 @@ def print_coco_stats(captions_json: Path) -> None:
 def plot_resolutions(data_dir: Path) -> None:
     # Plot a histogram of the resolutions of the images in the given directory
     resolutions = []
-    for img_path in tqdm(list(data_dir.iterdir())):
+    for img_path in tqdm(list(data_dir.iterdir()), desc="Checking resolutions", unit="img"):
         img = plt.imread(img_path)
         imgs = img.shape
         resolutions.append(f"{imgs[0]}x{imgs[1]}")
 
-    # plot a histogram of the resolutions
+    # Plot a histogram of the resolutions
     resolutions_np = np.array(resolutions)
     unique, counts = np.unique(resolutions_np, return_counts=True)
 
-    # lower figure font size on the x-axis
+    # Lower figure font size on the x-axis
     plt.rcParams.update({'font.size': 6})
-    # rotate the x-axis labels
+    # Rotate the x-axis labels
     plt.xticks(rotation=90)
 
     plt.bar(unique, counts)
@@ -207,23 +207,10 @@ def fourier_transform_log(img: np.ndarray) -> np.ndarray:
 
 
 def main():
-    coco_dir = Path("..", "data", "MSCOCO2014")
-    coco_data_dir = coco_dir.joinpath("filtered_val")
-    coco_json = coco_dir.joinpath("annotations", "captions_val2014.json")
-    sd2_dir = Path("..", "data", "StableDiffusion2", "filtered_val2014_ts50")
-    dalle2_dir = Path("..", "data", "DALLE2", "DMimageDetection")
-    stylegan_dir = Path("..", "data", "StyleGAN2", "filtered_images")
-    sdr_dir = Path("..", "data", "HDR", "filtered_images")
-    vqgan_dir = Path("..", "data", "VQGAN", "filtered_images")
-
-    # print_coco_stats(coco_json)
-    # plot_resolutions(sdr_dir)
+    sd2_dir = Path("..", "data", "StableDiffusion2", "text")
+    plot_resolutions(sd2_dir)
     data_dict = {
-        "COCO": coco_data_dir,
-        "SDR": sdr_dir,
-        "StyleGAN2": stylegan_dir,
-        "VQGAN": vqgan_dir,
-        "DALL·E 2": dalle2_dir,
+        "SD2": sd2_dir,
     }
     plot_spectra(data_dict, crop_size=[256], apply_filter=True, show_example=False,
                  same_intensity=True, fig_size=(18, 4.3), jpeg_quality=None)
