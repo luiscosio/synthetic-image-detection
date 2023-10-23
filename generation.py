@@ -162,7 +162,7 @@ def main():
                                                  "The images are saved in the data directory, under the "
                                                  "used generator's name by default.")
 
-    parser.add_argument(type=str, dest="prompt_input", metavar="input",
+    parser.add_argument("--input", "-i", type=str, required=True, dest="prompt_input",
                         help="Text prompt or a path to a CSV file (.csv extension) with a prompt on every row")
 
     parser.add_argument("--generator", "-g", choices=["StableDiffusion2", "LDM"],
