@@ -1,5 +1,6 @@
 # About
-A work-in-progress code for evaluating synthetic image detectors.
+Code for evaluating specific synthetic image detectors, which have been re-implemented for this 
+evaluation framework.
 
 # Disclaimer
 This repository contains other repositories as submodules.
@@ -82,14 +83,16 @@ from the original or submodule repository, CLIP weights are downloaded automatic
 - EnsembleDetector: [methods](https://www.dropbox.com/s/n1boisish8m6aoj/weights.zip) (Dropbox), unzip and place each weight file
 directly under the detector's weight directory
 
-TODO: alternatively weights as input parameters, automate? (onedrive not possible)
+For evaluating other detectors that are not included in this repository, their PyTorch implementations are required to 
+be added as a submodule and implementing the Detector class. Alternatively, a detector's results could be saved in a 
+similar CSV file to enable evaluation.
 
 # Usage
-TODO: clearer instructions after the code is modified
-
-The specific detectors are tested for whole datasets in [detection.py](detection.py), and their results are saved to a CSV file.
+The specific detectors are tested for whole datasets in [detection.py](detection.py), 
+and their results are saved to a CSV file.
 The results can be printed in [evaluations.py](evaluations.py).
-TODO: inference?
+[data_filtering.py](utils/data_filtering.py) can be used to filter downloaded datasets that are in a specific format.
+The filters contain hard-coded values, which can be adjusted in the code.
 
 Stable Diffusion 2.1 and LDM can be used to create synthetic images from prompts in [generation.py](generation.py).
 Otherwise, datasets should be downloaded from elsewhere.
@@ -97,20 +100,40 @@ Otherwise, datasets should be downloaded from elsewhere.
 Place each downloaded dataset to a ``data`` directory. Each dataset or their subsets should have their
 all their images in the same directory, without mixing any synthetic and real images. The paths for the used datasets
 are hard-coded in [detection.py](detection.py) and paired with a correct label, 1 for synthetic, 0 for real.
-TODO: data path and label as input argument
 
 <details close>
 <summary>Example datasets</summary>
 
-| Name & download location                                                               | Class | 
-|:---------------------------------------------------------------------------------------|:------|
-| [COCO 2014 validation](https://cocodataset.org/#download)                              | Real  |
-| [HDR/SDR](https://lesc.dinfo.unifi.it/materials/datasets_en.html)                      | Real  |
-| [Midjourney v5.1](https://www.kaggle.com/datasets/iraklip/modjourney-v51-cleaned-data) | Fake  | 
-| [StyleGAN2](https://github.com/peterwang512/CNNDetection) (CNNDetection)               | Fake  |
-| [VQGAN](https://github.com/CompVis/taming-transformers) (Taming Transformers)          | Fake  |
-| [GANs and DMs](https://github.com/grip-unina/DMimageDetection) (DMimageDetection)      | Fake  |
+| Name & download location                                                                                                                                                         | Class | 
+|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:------|
+| [COCO 2014 validation](https://cocodataset.org/#download)                                                                                                                        | Real  |
+| [HDR/SDR](https://lesc.dinfo.unifi.it/materials/datasets_en.html)                                                                                                                | Real  |
+| [Midjourney v5.1](https://www.kaggle.com/datasets/iraklip/modjourney-v51-cleaned-data) ([data_filtering.py](data_filtering.py) requires the CSV file for downloading the images) | Fake  | 
+| [StyleGAN2](https://github.com/peterwang512/CNNDetection) (CNNDetection)                                                                                                         | Fake  |
+| [VQGAN](https://github.com/CompVis/taming-transformers) (Taming Transformers)                                                                                                    | Fake  |
+| [GANs and DMs](https://github.com/grip-unina/DMimageDetection) (DMimageDetection)                                                                                                | Fake  |
 
 </details>
 
-[data_filtering.py](utils/data_filtering.py) can be used to filter downloaded datasets that are in a specific format.
+
+<details close>
+<summary>Example command-line commands</summary>
+
+```
+Detection using hard-coded configurations:
+$ python detection.py -d CNNDetector_p0.1_crop -ds StableDiffusion2 -bs 50 --verbose
+
+Detection using custom configurations:
+$ python detection.py -d CNNDetector_p0.1_heavy_compression -dc cnndetector -dw weights/cnndetector/blur_jpg_prob0.1.pth -dsd data/StableDiffusion2/text -dsl 1 -bs 50 -c 40 -cs "None" -rs "(500, 500)" -v -o csvs/myresults.csv
+
+Evaluating the results on multiple resize-augmented datasets of multiple detectors with balanced thresholds
+$ python evaluation.py acc -i csvs -cf bilinear -d CLIPDetector_crop CNNDetector_p0.1 -bp csvs/SDR.csv csvs/StableDiffusion2.csv 
+
+Plotting the Area Under the ROC Curve and average precision:
+$ python evaluation.py aucap -i csvs/SDR.csv csvs/StableDiffusion2.csv -d CLIPDetector_crop
+
+Generating images with Stable Diffusion 2 from a text prompt:
+$ python generation.py -i "Hello, World!" -g StableDiffusion2 -n 2
+```
+
+</details>
