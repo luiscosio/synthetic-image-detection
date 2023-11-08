@@ -164,6 +164,9 @@ def start_detection(detector_id: str,
     elif label is None:
         raise ValueError("A custom dataset directory was given, but no dataset label")
 
+    elif dataset_id is None and csv_path is None:
+        dataset_id = data_dir.name
+
     # Validate detector arguments and load the detector
     if detector_class is None:
         if detector_id in DETECTORS.keys():
@@ -286,10 +289,11 @@ def main():
                                                  "different, they are overwritten.")
 
     parser.add_argument("--detector", "-d", type=str, required=True, dest="detector_id",
-                        help="ID of a synthetic image detector that is used for the detection. "
-                             "The ID is only used for naming and hard-coded detector weight paths. "
-                             "Can be arbitrarily named when not using hard-coded paths, as detector "
-                             "class and weights arguments needs to be given")
+                        help=f"ID of a synthetic image detector that is used for the detection. "
+                             f"The ID is only used for naming and hard-coded detector weight paths. "
+                             f"Can be arbitrarily named when not using hard-coded paths, as detector "
+                             f"class and weights arguments needs to be given. "
+                             f"Hard-coded IDs are: {list(DETECTORS.keys())}")
 
     parser.add_argument("--detector-class", "-dc", choices=["cnndetector", "clipdetector", "ensembledetector", "dire"],
                         default=None, dest="detector_class",
