@@ -34,7 +34,7 @@ Alternatively, if the repository was already cloned without submodules, use
 
 The required python packages can be installed via the command line by moving to the project
 folder, creating a new virtual environment, and downloading the packages marked in the
-[requirements](requirements.txt) file. The example virtual environment activation script is for Windows OS.
+[requirements](requirements.txt) file. The example virtual environment activation script is for Bash.
 ```
 $ cd ./synthetic-image-detection
 $ python -m venv venv
