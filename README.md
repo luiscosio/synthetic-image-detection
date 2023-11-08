@@ -78,7 +78,7 @@ For downloading the weights, refer to the original repositories, or use the prov
 from the original or submodule repository, CLIP weights are downloaded automatically when first run
 - CNNDetector: [blur_jpg_prob0.1](https://www.dropbox.com/s/h7tkpcgiwuftb6g/blur_jpg_prob0.1.pth) &
 [blur_jpg_prob0.5](https://www.dropbox.com/s/2g2jagq2jn1fd0i/blur_jpg_prob0.5.pth) (Dropbox)
-- DIRE: [lsun_adam](https://mailustceducn-my.sharepoint.com/personal/zhendongwang_mail_ustc_edu_cn/_layouts/15/onedrive.aspx?ga=1&id=%2Fpersonal%2Fzhendongwang%5Fmail%5Fustc%5Fedu%5Fcn%2FDocuments%2Fdatasets%2FDiffusionForensics%2Fcheckpoints)
+- DIRE: [lsun_adm](https://mailustceducn-my.sharepoint.com/personal/zhendongwang_mail_ustc_edu_cn/_layouts/15/onedrive.aspx?ga=1&id=%2Fpersonal%2Fzhendongwang%5Fmail%5Fustc%5Fedu%5Fcn%2FDocuments%2Fdatasets%2FDiffusionForensics%2Fcheckpoints%2Flsun%5Fadm%2Epth&parent=%2Fpersonal%2Fzhendongwang%5Fmail%5Fustc%5Fedu%5Fcn%2FDocuments%2Fdatasets%2FDiffusionForensics%2Fcheckpoints)
 (OneDrive) & [256x256_diffusion_uncond](https://openaipublic.blob.core.windows.net/diffusion/jul-2021/256x256_diffusion_uncond.pt) (direct)
 - EnsembleDetector: [methods](https://www.dropbox.com/s/n1boisish8m6aoj/weights.zip) (Dropbox), unzip and place each weight file
 directly under the detector's weight directory
@@ -90,7 +90,9 @@ similar CSV file to enable evaluation.
 # Usage
 The specific detectors are tested for whole datasets in [detection.py](detection.py), 
 and their results are saved to a CSV file.
-The results can be printed in [evaluations.py](evaluations.py).
+
+The results from the CSV files are printed in [evaluations.py](evaluations.py).
+
 [data_filtering.py](utils/data_filtering.py) can be used to filter downloaded datasets that are in a specific format.
 The filters contain hard-coded values, which can be adjusted in the code.
 
