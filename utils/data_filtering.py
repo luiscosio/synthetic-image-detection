@@ -598,14 +598,14 @@ def main():
     # download_midjourney_data(csv_path=mj_csv, dir_out=mj_dir_out,
     #                          apply_filtering=True, csv_out=mj_csv_out, desired_size=desired_size, validate_data=True)
 
-    coco_dir = data_dir.joinpath("MSCOCO2014")
-    coco_data_dir = coco_dir.joinpath("val2014")
-    coco_json = coco_dir.joinpath("annotations", "captions_val2014.json")
-    coco_data_out = coco_dir.joinpath("filtered_val")
-    coco_csv_out = coco_dir.joinpath("filtered_val.csv")
-    create_coco_subset(
-        coco_json, coco_data_dir, coco_data_out, coco_csv_out, desired_size=desired_size
-    )
+    # coco_dir = data_dir.joinpath("MSCOCO2014")
+    # coco_data_dir = coco_dir.joinpath("val2014")
+    # coco_json = coco_dir.joinpath("annotations", "captions_val2014.json")
+    # coco_data_out = coco_dir.joinpath("filtered_val")
+    # coco_csv_out = coco_dir.joinpath("filtered_val.csv")
+    # create_coco_subset(
+    #     coco_json, coco_data_dir, coco_data_out, coco_csv_out, desired_size=desired_size
+    # )
 
     # stylegan_dir = data_dir.joinpath("easy_to_spot_dataset", "stylegan2")
     # stylegan_data_out = data_dir.joinpath("StyleGAN2", "filtered_images")
@@ -616,11 +616,16 @@ def main():
     # vqgan_data_out = vqgan_dir.joinpath("filtered_images")
     # create_subset_from_structure(vqgan_data_dir, vqgan_data_out, desired_size=desired_size)
 
-    # hdr_dir = data_dir.joinpath("HDR")
-    # hdr_data_dir = hdr_dir.joinpath("full")
-    # hdr_data_out = hdr_dir.joinpath("filtered_images")
-    # create_subset_from_structure(hdr_data_dir, hdr_data_out, desired_size=desired_size, class_subfolder="NAT/SDR*",
-    #                              negative_subfolders=["SHAKING"])
+    hdr_dir = data_dir.joinpath("HDR")
+    hdr_data_dir = hdr_dir.joinpath("full")
+    hdr_data_out = hdr_dir.joinpath("filtered_images")
+    create_subset_from_structure(
+        hdr_data_dir,
+        hdr_data_out,
+        desired_size=desired_size,
+        class_subfolder="NAT/SDR*",
+        negative_subfolders=["SHAKING"],
+    )
 
 
 if __name__ == "__main__":

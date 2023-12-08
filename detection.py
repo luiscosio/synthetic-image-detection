@@ -71,13 +71,14 @@ DETECTORS: Dict[str, DetectorTuple] = {
 
 DATA = Path("data")
 DATASETS: Dict[str, DatasetTuple] = {
+    "fast": DatasetTuple(DATA.joinpath("fast"), 1),
     "MSCOCO2014_val2014": DatasetTuple(
         DATA.joinpath("MSCOCO2014", "val2014"), 0
     ),  # DONE
     "MSCOCO2014_valsubset": DatasetTuple(DATA.joinpath("MSCOCO2014", "valsubset"), 0),
     "MSCOCO2014_filtered_val": DatasetTuple(
         DATA.joinpath("MSCOCO2014", "filtered_val"), 0
-    ),
+    ),  # DONE
     "SDR": DatasetTuple(DATA.joinpath("HDR", "filtered_images"), 0),
     "StableDiffusion2": DatasetTuple(
         DATA.joinpath("StableDiffusion2", "filtered_val2014_ts50"), 1
@@ -99,7 +100,6 @@ DATASETS: Dict[str, DatasetTuple] = {
     "VQGAN": DatasetTuple(DATA.joinpath("VQGAN", "filtered_images"), 1),
     "Craiyon": DatasetTuple(DATA.joinpath("Craiyon"), 1),
     "DALLE2": DatasetTuple(DATA.joinpath("DALLE2", "DMimageDetection"), 1),
-    "DALLE3": DatasetTuple(DATA.joinpath("DALLE3"), 1),
 }
 
 
