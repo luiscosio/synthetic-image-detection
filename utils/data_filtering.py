@@ -661,12 +661,12 @@ def main():
     #     dalle_3_dir, dalle_3_out
     # )
 
-    dalle_3_dir = data_dir.joinpath("dalle-3-dataset", "images")
-    print(dalle_3_dir)
-    dalle_3_out = data_dir.joinpath("dalle-3-dataset", "filtered_images")
-    create_subset_from_structure(
-        dalle_3_dir, dalle_3_out, desired_size=desired_size
-    )
+    # dalle_3_dir = data_dir.joinpath("dalle-3-dataset", "images")
+    # print(dalle_3_dir)
+    # dalle_3_out = data_dir.joinpath("dalle-3-dataset", "filtered_images")
+    # create_subset_from_structure(
+    #     dalle_3_dir, dalle_3_out, desired_size=desired_size
+    # )
 
 if __name__ == "__main__":
     main()
