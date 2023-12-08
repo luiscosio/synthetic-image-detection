@@ -4,7 +4,9 @@ from typing import List
 import pandas as pd
 
 
-def create_dataset_csv(images: List, label: int, csv_path: Path, sep: str = ",") -> None:
+def create_dataset_csv(
+    images: List, label: int, csv_path: Path, sep: str = ","
+) -> None:
     """
     Create a CSV file for an image dataset. The CSV file contains a row for each image,
     with the image name and the ground truth label. The label is the same for all images.
@@ -22,7 +24,9 @@ def create_dataset_csv(images: List, label: int, csv_path: Path, sep: str = ",")
     df.to_csv(csv_path, index=False, sep=sep)
 
 
-def add_results_to_csv(csv_path: Path, detector_id: str, results: List, scores: List, sep: str = ",") -> None:
+def add_results_to_csv(
+    csv_path: Path, detector_id: str, results: List, scores: List, sep: str = ","
+) -> None:
     """
     Add or overwrite the results of a detector to a CSV dataset file.
 

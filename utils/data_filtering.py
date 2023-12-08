@@ -13,18 +13,31 @@ import requests
 from PIL import Image
 from tqdm import tqdm
 
-from dataset import IMG_EXTENSIONS
+# from dataset import IMG_EXTENSIONS
+IMG_EXTENSIONS = (
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".ppm",
+    ".bmp",
+    ".pgm",
+    ".tif",
+    ".tiff",
+    ".webp",
+)
 
 np.random.seed(42)
 random.seed(42)
 
 
-def download_midjourney_data(csv_path: Path,
-                             dir_out: Path,
-                             apply_filtering: bool = True,
-                             csv_out: Optional[Path] = None,
-                             desired_size: Optional[int] = None,
-                             validate_data: bool = True) -> None:
+def download_midjourney_data(
+    csv_path: Path,
+    dir_out: Path,
+    apply_filtering: bool = True,
+    csv_out: Optional[Path] = None,
+    desired_size: Optional[int] = None,
+    validate_data: bool = True,
+) -> None:
     """
     Download the Midjourney v5.1 Cleaned Dataset images with filters.
     The CSV file needs to be downloaded first from https://www.kaggle.com/datasets/iraklip/modjourney-v51-cleaned-data.
@@ -49,7 +62,9 @@ def download_midjourney_data(csv_path: Path,
         data = filter_midjourney_data(data, csv_out, desired_size, validate_data)
 
     # Loop through the rows of the DataFrame
-    for index, row in tqdm(data.iterrows(), total=data.shape[0], desc="Downloading images", unit="img"):
+    for index, row in tqdm(
+        data.iterrows(), total=data.shape[0], desc="Downloading images", unit="img"
+    ):
         # Get the image URL and prompt
         image_url = row["Attachments"]
         og_idx = row["original_index"]
@@ -67,24 +82,32 @@ def download_midjourney_data(csv_path: Path,
             try:
                 response = requests.get(image_url)
                 if response.status_code != 200:
-                    print(f"Error downloading image at row {index} (idx {og_idx}): {response.status_code}")
+                    print(
+                        f"Error downloading image at row {index} (idx {og_idx}): {response.status_code}"
+                    )
                     continue
-                with open(image_file_path, 'wb') as f:
+                with open(image_file_path, "wb") as f:
                     f.write(response.content)
                     break
             except requests.exceptions.RequestException as e:
                 if attempt < max_retries - 1:
-                    print(f"Error downloading image at row {index} (idx {og_idx}) (attempt {attempt + 1}): {str(e)}")
+                    print(
+                        f"Error downloading image at row {index} (idx {og_idx}) (attempt {attempt + 1}): {str(e)}"
+                    )
                     time.sleep(3)  # Wait before retrying
                 else:
-                    print(f"Failed to download image at row {index} (idx {og_idx}) after {max_retries} attempts: {str(e)}")
+                    print(
+                        f"Failed to download image at row {index} (idx {og_idx}) after {max_retries} attempts: {str(e)}"
+                    )
                     continue
 
 
-def test_midjourney_filters(midjourney_csv: Path,
-                            csv_out: Optional[Path] = None,
-                            desired_size: Optional[int] = None,
-                            validate_data: bool = True) -> None:
+def test_midjourney_filters(
+    midjourney_csv: Path,
+    csv_out: Optional[Path] = None,
+    desired_size: Optional[int] = None,
+    validate_data: bool = True,
+) -> None:
     """
     Test the output size of the current Midjourney filters, printing the original and final shape.
 
@@ -95,16 +118,19 @@ def test_midjourney_filters(midjourney_csv: Path,
         validate_data: Whether to validate the data during optional size filtering
     """
     og_data = pd.read_csv(midjourney_csv, sep=",")
-    filtered_data = filter_midjourney_data(og_data, csv_out=csv_out,
-                                           desired_size=desired_size, validate_data=validate_data)
+    filtered_data = filter_midjourney_data(
+        og_data, csv_out=csv_out, desired_size=desired_size, validate_data=validate_data
+    )
     print(f"Original data: {og_data.shape}")
     print(f"Filtered data: {filtered_data.shape} rows")
 
 
-def filter_midjourney_data(data: pd.DataFrame,
-                           csv_out: Optional[Path] = None,
-                           desired_size: Optional[int] = None,
-                           validate_data: bool = True) -> pd.DataFrame:
+def filter_midjourney_data(
+    data: pd.DataFrame,
+    csv_out: Optional[Path] = None,
+    desired_size: Optional[int] = None,
+    validate_data: bool = True,
+) -> pd.DataFrame:
     """
     Filter the Midjourney data to keep only the rows that pass the filters.
     A CSV file with the filtered data is saved if a path is supplied.
@@ -122,13 +148,27 @@ def filter_midjourney_data(data: pd.DataFrame,
     # Adjustable filters, values must be in a list or the specific filter is ignored
     # allowed_versions = ["4", "4.0", "5", "5.0", "5.1"]
     allowed_versions = ["5.1"]
-    required_words = ["photo"]  # Prompt having ANY of these subwords is kept (unless blocked), case-insensitive
+    required_words = [
+        "photo"
+    ]  # Prompt having ANY of these subwords is kept (unless blocked), case-insensitive
     # Prompt having ANY of these subwords is removed, case-insensitive
-    blocked_words = ["cartoon", "comic", "painting", "drawing", "animation", "sprite", "drawn", "sketch", "anime"]
+    blocked_words = [
+        "cartoon",
+        "comic",
+        "painting",
+        "drawing",
+        "animation",
+        "sprite",
+        "drawn",
+        "sketch",
+        "anime",
+    ]
     allowed_ratios = ["1:1"]  # Multiples are discarded, such as 2:2 and 3:3
     max_characters = 1600  # Prompts + parameters with more characters are removed
 
-    data = data[["Unnamed: 0", "Attachments", "version", "aspect", "clean_prompts", "Content"]]
+    data = data[
+        ["Unnamed: 0", "Attachments", "version", "aspect", "clean_prompts", "Content"]
+    ]
     data.rename(columns={"Unnamed: 0": "original_index"}, inplace=True)
     data_length = len(data)
     og_length = data_length
@@ -153,7 +193,9 @@ def filter_midjourney_data(data: pd.DataFrame,
     # In the original CSV, only --ar has been considered, not --aspect
     # Replace an empty aspect ratio with a possible found one
     reg = r"\s--aspect\s(\d+:\d+)(?:\s|\*\*)"
-    data.loc[data["aspect"].isnull(), "aspect"] = data.loc[data["aspect"].isnull(), "Content"].str.extract(reg, expand=False)
+    data.loc[data["aspect"].isnull(), "aspect"] = data.loc[
+        data["aspect"].isnull(), "Content"
+    ].str.extract(reg, expand=False)
     # Default aspect ratio is 1:1
     data["aspect"] = data["aspect"].fillna("1:1").astype(str)
     if isinstance(allowed_ratios, list) and len(allowed_ratios) > 0:
@@ -164,9 +206,13 @@ def filter_midjourney_data(data: pd.DataFrame,
     # Prompt filter
     data["clean_prompts"] = data["clean_prompts"].fillna("None").astype(str)
     if isinstance(required_words, list) and len(required_words) > 0:
-        data = data[data["clean_prompts"].str.contains("|".join(required_words), case=False)]
+        data = data[
+            data["clean_prompts"].str.contains("|".join(required_words), case=False)
+        ]
     if isinstance(blocked_words, list) and len(blocked_words) > 0:
-        data = data[~data["clean_prompts"].str.contains("|".join(blocked_words), case=False)]
+        data = data[
+            ~data["clean_prompts"].str.contains("|".join(blocked_words), case=False)
+        ]
     print(f"Prompt filter removed {data_length - len(data)} rows")
     data_length = len(data)
 
@@ -180,7 +226,9 @@ def filter_midjourney_data(data: pd.DataFrame,
         if desired_size < data_length:
             if not validate_data:
                 data = data.sample(n=desired_size, random_state=42)
-                data.sort_values(by="original_index", inplace=True)  # Sort by original index
+                data.sort_values(
+                    by="original_index", inplace=True
+                )  # Sort by original index
             else:
                 data_new = data.copy()
                 rng = np.random.default_rng(42)
@@ -190,17 +238,25 @@ def filter_midjourney_data(data: pd.DataFrame,
                     row = data.iloc[idx]
                     image_url = row["Attachments"]
                     response = requests.head(image_url)
-                    if response.status_code == 200:  # Check that the image can be downloaded
+                    if (
+                        response.status_code == 200
+                    ):  # Check that the image can be downloaded
                         data_new.iloc[running_idx] = row
                         running_idx += 1
                         pbar.update(1)
                         if running_idx == desired_size:
                             break
                 pbar.close()
-                data_new = data_new.iloc[:running_idx]  # Remove unused rows from the copy
-                data = data_new.sort_values(by="original_index", inplace=False)  # Sort by original index
+                data_new = data_new.iloc[
+                    :running_idx
+                ]  # Remove unused rows from the copy
+                data = data_new.sort_values(
+                    by="original_index", inplace=False
+                )  # Sort by original index
                 if len(data) < desired_size:
-                    print(f"Warning: not enough valid data {len(data)} to reach desired size, consider changing filters")
+                    print(
+                        f"Warning: not enough valid data {len(data)} to reach desired size, consider changing filters"
+                    )
 
             print(f"Desired size filter removed {data_length - len(data)} rows")
             data_length = len(data)
@@ -208,9 +264,13 @@ def filter_midjourney_data(data: pd.DataFrame,
         elif desired_size == data_length:
             print(f"Desired size filter removed 0 rows")
         elif desired_size > og_length:
-            print(f"Desired size is larger than the original data size, no rows removed")
+            print(
+                f"Desired size is larger than the original data size, no rows removed"
+            )
         else:
-            print(f"Desired size is larger than the filtered data size, no rows removed, consider changing filters")
+            print(
+                f"Desired size is larger than the filtered data size, no rows removed, consider changing filters"
+            )
 
     print(f"Final data size: {data_length} rows")
 
@@ -221,11 +281,9 @@ def filter_midjourney_data(data: pd.DataFrame,
     return data
 
 
-def create_coco_subset(captions_json: Path,
-                       dir_in: Path,
-                       dir_out: Path,
-                       csv_out: Path,
-                       desired_size: int) -> None:
+def create_coco_subset(
+    captions_json: Path, dir_in: Path, dir_out: Path, csv_out: Path, desired_size: int
+) -> None:
     """
     Create a subset of the COCO (2014 validation) dataset using the official captions JSON file.
     Filters and desired size are used to reduce the size of dataset.
@@ -275,10 +333,12 @@ def create_coco_subset(captions_json: Path,
         shutil.copy(image_path, dir_out.joinpath(image_name))
 
 
-def filter_coco_data(images: Dict[int, Dict[str, Union[int, str]]],
-                     annotations: Dict[int, List[Dict[str, Union[int, str]]]],
-                     dir_in: Path,
-                     desired_size: int) -> List[List[Union[int, str]]]:
+def filter_coco_data(
+    images: Dict[int, Dict[str, Union[int, str]]],
+    annotations: Dict[int, List[Dict[str, Union[int, str]]]],
+    dir_in: Path,
+    desired_size: int,
+) -> List[List[Union[int, str]]]:
     """
     Filter the COCO dataset to match the desired size and filters.
     The images are filtered to be square, above a minimum size, have at least one caption and not be grayscale.
@@ -312,11 +372,15 @@ def filter_coco_data(images: Dict[int, Dict[str, Union[int, str]]],
         img = np.array(img, dtype=np.uint8)
         if len(img.shape) < 3:
             continue
-        if np.array_equal(img[:, :, 0], img[:, :, 1]) and np.array_equal(img[:, :, 0], img[:, :, 2]):
+        if np.array_equal(img[:, :, 0], img[:, :, 1]) and np.array_equal(
+            img[:, :, 0], img[:, :, 2]
+        ):
             continue
 
         # Choose the longest text caption in a list of dictionaries under "caption" key, longest in COCO is ~50 words
-        _, cap_id, caption = max(annotations[idx], key=lambda d: len(d["caption"])).values()
+        _, cap_id, caption = max(
+            annotations[idx], key=lambda d: len(d["caption"])
+        ).values()
 
         data_rows[0].append([idx, values["file_name"], height, width, cap_id, caption])
 
@@ -329,18 +393,22 @@ def filter_coco_data(images: Dict[int, Dict[str, Union[int, str]]],
         elif desired_size > og_length:
             print(f"Desired size is larger than the original data size")
         else:
-            print(f"Desired size is larger than the filtered data size, consider changing filters")
+            print(
+                f"Desired size is larger than the filtered data size, consider changing filters"
+            )
 
     print(f"Final data size: {len(data_rows[0])} rows")
 
     return data_rows
 
 
-def create_subset_from_structure(data_dir: Path,
-                                 dir_out: Path,
-                                 desired_size: int,
-                                 class_subfolder: Optional[Union[Path, str]] = None,
-                                 negative_subfolders: Optional[List[str]] = None) -> None:
+def create_subset_from_structure(
+    data_dir: Path,
+    dir_out: Path,
+    desired_size: int,
+    class_subfolder: Optional[Union[Path, str]] = None,
+    negative_subfolders: Optional[List[str]] = None,
+) -> None:
     """
     Create a subset of a dataset with the following folder structure:
     Dataset
@@ -371,10 +439,16 @@ def create_subset_from_structure(data_dir: Path,
     class_dirs = list(data_dir.glob(search_str))
 
     if negative_subfolders is not None:
-        class_dirs = [class_dir for class_dir in class_dirs if not any(subfolder in class_dir.name for subfolder in negative_subfolders)]
+        class_dirs = [
+            class_dir
+            for class_dir in class_dirs
+            if not any(subfolder in class_dir.name for subfolder in negative_subfolders)
+        ]
 
     if len(class_dirs) == 0:
-        print("No classes found, check the folder (input) structure and negative_subfolders")
+        print(
+            "No classes found, check the folder (input) structure and negative_subfolders"
+        )
         return
 
     # Keep the original order if the class folders are named with digits
@@ -384,7 +458,9 @@ def create_subset_from_structure(data_dir: Path,
     # Get the number of images in each class where an image must have an extension from IMG_EXTENSIONS
     class_sizes = []
     for class_dir in class_dirs:
-        class_sizes.append(len([file for file in class_dir.glob("*") if file.suffix in IMG_EXTENSIONS]))
+        class_sizes.append(
+            len([file for file in class_dir.glob("*") if file.suffix in IMG_EXTENSIONS])
+        )
 
     balanced_size, remainder = divmod(desired_size, len(class_dirs))
     small_classes = np.array(class_sizes) < balanced_size
@@ -392,17 +468,25 @@ def create_subset_from_structure(data_dir: Path,
     dir_out.mkdir(parents=True, exist_ok=True)
 
     if sum(class_sizes) <= desired_size:
-        print(f"Desired size is larger than the original size of the dataset, copying the whole dataset")
+        print(
+            f"Desired size is larger than the original size of the dataset, copying the whole dataset"
+        )
         for class_dir in class_dirs:
-            image_paths.extend([file for file in class_dir.glob("*") if file.suffix in IMG_EXTENSIONS])
+            image_paths.extend(
+                [file for file in class_dir.glob("*") if file.suffix in IMG_EXTENSIONS]
+            )
 
     elif small_classes.any():
-        print(f"The subset will be unbalanced (use desired_size {min(class_sizes)*len(class_dirs)} for a balanced set)")
+        print(
+            f"The subset will be unbalanced (use desired_size {min(class_sizes)*len(class_dirs)} for a balanced set)"
+        )
 
-        def add_images_recursively(remaining_class_dirs: List[Path],
-                                   remaining_class_sizes: List[int],
-                                   current_best_size: int,
-                                   needed_images: int) -> None:
+        def add_images_recursively(
+            remaining_class_dirs: List[Path],
+            remaining_class_sizes: List[int],
+            current_best_size: int,
+            needed_images: int,
+        ) -> None:
             """
             Recursively add images to the parent function's list, going from smallest to largest class.
             The bigger the class, the more images it will have, while keeping classes as balanced as possible.
@@ -418,25 +502,48 @@ def create_subset_from_structure(data_dir: Path,
             class_size = remaining_class_sizes[smallest_pos]
 
             if class_size < current_best_size:
-                image_paths.extend([file for file in class_dir.glob("*") if file.suffix in IMG_EXTENSIONS])
+                image_paths.extend(
+                    [
+                        file
+                        for file in class_dir.glob("*")
+                        if file.suffix in IMG_EXTENSIONS
+                    ]
+                )
                 needed_images -= class_size
 
             else:
-                image_paths.extend(random.sample([file for file in class_dir.glob("*") if file.suffix in IMG_EXTENSIONS],
-                                                 current_best_size))
+                image_paths.extend(
+                    random.sample(
+                        [
+                            file
+                            for file in class_dir.glob("*")
+                            if file.suffix in IMG_EXTENSIONS
+                        ],
+                        current_best_size,
+                    )
+                )
                 needed_images -= current_best_size
 
             remaining_class_dirs.pop(smallest_pos)
             remaining_class_sizes.pop(smallest_pos)
             if len(remaining_class_dirs) == 0:
                 return
-            current_best_size = needed_images // len(remaining_class_dirs)  # Biggest class has no remainder
-            add_images_recursively(remaining_class_dirs, remaining_class_sizes, current_best_size, needed_images)
+            current_best_size = needed_images // len(
+                remaining_class_dirs
+            )  # Biggest class has no remainder
+            add_images_recursively(
+                remaining_class_dirs,
+                remaining_class_sizes,
+                current_best_size,
+                needed_images,
+            )
 
         add_images_recursively(class_dirs, class_sizes, balanced_size, desired_size)
 
     elif remainder != 0:
-        print(f"Desired size is not perfectly divisible by the number of classes, creating a slightly unbalanced subset")
+        print(
+            f"Desired size is not perfectly divisible by the number of classes, creating a slightly unbalanced subset"
+        )
         counter = 0
         for class_dir, class_size in zip(class_dirs, class_sizes):
             if counter != remainder and class_size > balanced_size:
@@ -444,20 +551,38 @@ def create_subset_from_structure(data_dir: Path,
                 counter += 1
             else:
                 addition = 0
-            image_paths.extend(random.sample([file for file in class_dir.glob("*") if file.suffix in IMG_EXTENSIONS],
-                                             balanced_size+addition))
+            image_paths.extend(
+                random.sample(
+                    [
+                        file
+                        for file in class_dir.glob("*")
+                        if file.suffix in IMG_EXTENSIONS
+                    ],
+                    balanced_size + addition,
+                )
+            )
 
     else:
         print(f"Creating a balanced subset of size {desired_size}")
         for class_dir in class_dirs:
-            image_paths.extend(random.sample([file for file in class_dir.glob("*") if file.suffix in IMG_EXTENSIONS],
-                                             balanced_size))
+            image_paths.extend(
+                random.sample(
+                    [
+                        file
+                        for file in class_dir.glob("*")
+                        if file.suffix in IMG_EXTENSIONS
+                    ],
+                    balanced_size,
+                )
+            )
 
     print(f"Final data size: {len(image_paths)} images")
 
     # Copy images to the new directory
     zfill_size = len(str(len(image_paths)))
-    for idx, image_path in tqdm(enumerate(image_paths), desc="Copying images", unit="img"):
+    for idx, image_path in tqdm(
+        enumerate(image_paths), desc="Copying images", unit="img"
+    ):
         name = str(idx).zfill(zfill_size) + image_path.suffix
         shutil.copy(image_path, dir_out.joinpath(name))
 
@@ -473,12 +598,14 @@ def main():
     # download_midjourney_data(csv_path=mj_csv, dir_out=mj_dir_out,
     #                          apply_filtering=True, csv_out=mj_csv_out, desired_size=desired_size, validate_data=True)
 
-    # coco_dir = data_dir.joinpath("MSCOCO2014")
-    # coco_data_dir = coco_dir.joinpath("val2014")
-    # coco_json = coco_dir.joinpath("annotations", "captions_val2014.json")
-    # coco_data_out = coco_dir.joinpath("filtered_val")
-    # coco_csv_out = coco_dir.joinpath("filtered_val.csv")
-    # create_coco_subset(coco_json, coco_data_dir, coco_data_out, coco_csv_out, desired_size=desired_size)
+    coco_dir = data_dir.joinpath("MSCOCO2014")
+    coco_data_dir = coco_dir.joinpath("val2014")
+    coco_json = coco_dir.joinpath("annotations", "captions_val2014.json")
+    coco_data_out = coco_dir.joinpath("filtered_val")
+    coco_csv_out = coco_dir.joinpath("filtered_val.csv")
+    create_coco_subset(
+        coco_json, coco_data_dir, coco_data_out, coco_csv_out, desired_size=desired_size
+    )
 
     # stylegan_dir = data_dir.joinpath("easy_to_spot_dataset", "stylegan2")
     # stylegan_data_out = data_dir.joinpath("StyleGAN2", "filtered_images")

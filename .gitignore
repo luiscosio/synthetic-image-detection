@@ -132,3 +132,5 @@ dmypy.json
 samples/
 weights/
 data/
+csvs/
+.vscode
