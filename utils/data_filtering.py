@@ -1,3 +1,4 @@
+import os
 import csv
 import json
 import random
@@ -29,6 +30,21 @@ IMG_EXTENSIONS = (
 np.random.seed(42)
 random.seed(42)
 
+def extract_images_from_parquet(folder_path, output_folder):
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    for file in os.listdir(folder_path):
+        if file.endswith(".parquet"):
+            file_path = os.path.join(folder_path, file)
+            df = pd.read_parquet(file_path)
+
+            for index, row in df.iterrows():
+                image_data = row["image"]["bytes"]
+                image_name = f"image_{row['message_id']}_{index}.png"
+
+                with open(os.path.join(output_folder, image_name), "wb") as image_file:
+                    image_file.write(image_data)
 
 def download_midjourney_data(
     csv_path: Path,
@@ -262,14 +278,12 @@ def filter_midjourney_data(
             data_length = len(data)
 
         elif desired_size == data_length:
-            print(f"Desired size filter removed 0 rows")
+            print("Desired size filter removed 0 rows")
         elif desired_size > og_length:
-            print(
-                f"Desired size is larger than the original data size, no rows removed"
-            )
+            print("Desired size is larger than the original data size, no rows removed")
         else:
             print(
-                f"Desired size is larger than the filtered data size, no rows removed, consider changing filters"
+                "Desired size is larger than the filtered data size, no rows removed, consider changing filters"
             )
 
     print(f"Final data size: {data_length} rows")
@@ -391,10 +405,10 @@ def filter_coco_data(
             data_rows[0] = random.sample(data_rows[0], desired_size)
             data_rows[0].sort(key=lambda x: x[0])  # Sort by image id
         elif desired_size > og_length:
-            print(f"Desired size is larger than the original data size")
+            print("Desired size is larger than the original data size")
         else:
             print(
-                f"Desired size is larger than the filtered data size, consider changing filters"
+                "Desired size is larger than the filtered data size, consider changing filters"
             )
 
     print(f"Final data size: {len(data_rows[0])} rows")
@@ -469,7 +483,7 @@ def create_subset_from_structure(
 
     if sum(class_sizes) <= desired_size:
         print(
-            f"Desired size is larger than the original size of the dataset, copying the whole dataset"
+            "Desired size is larger than the original size of the dataset, copying the whole dataset"
         )
         for class_dir in class_dirs:
             image_paths.extend(
@@ -542,7 +556,7 @@ def create_subset_from_structure(
 
     elif remainder != 0:
         print(
-            f"Desired size is not perfectly divisible by the number of classes, creating a slightly unbalanced subset"
+            "Desired size is not perfectly divisible by the number of classes, creating a slightly unbalanced subset"
         )
         counter = 0
         for class_dir, class_size in zip(class_dirs, class_sizes):
@@ -592,29 +606,42 @@ def main():
     data_dir = Path("..", "data")
 
     # Given a downloaded CSV file, download midjourney images
-    # mj_csv = data_dir.joinpath("midjourney_v51_cleaned_data", "upscaled_prompts_df.csv")
-    # mj_dir_out = data_dir.joinpath("midjourney_v51_cleaned_data", "filtered_images")
-    # mj_csv_out = mj_csv.parent.joinpath("filtered_prompts.csv")
-    # download_midjourney_data(csv_path=mj_csv, dir_out=mj_dir_out,
-    #                          apply_filtering=True, csv_out=mj_csv_out, desired_size=desired_size, validate_data=True)
+    mj_csv = data_dir.joinpath("midjourney_v51_cleaned_data", "upscaled_prompts_df.csv")
+    mj_dir_out = data_dir.joinpath("midjourney_v51_cleaned_data", "filtered_images")
+    mj_csv_out = mj_csv.parent.joinpath("filtered_prompts.csv")
+    download_midjourney_data(
+        csv_path=mj_csv,
+        dir_out=mj_dir_out,
+        apply_filtering=True,
+        csv_out=mj_csv_out,
+        desired_size=desired_size,
+        validate_data=True,
+    )
 
-    # coco_dir = data_dir.joinpath("MSCOCO2014")
-    # coco_data_dir = coco_dir.joinpath("val2014")
-    # coco_json = coco_dir.joinpath("annotations", "captions_val2014.json")
-    # coco_data_out = coco_dir.joinpath("filtered_val")
-    # coco_csv_out = coco_dir.joinpath("filtered_val.csv")
-    # create_coco_subset(
-    #     coco_json, coco_data_dir, coco_data_out, coco_csv_out, desired_size=desired_size
-    # )
+    coco_dir = data_dir.joinpath("MSCOCO2014")
+    coco_data_dir = coco_dir.joinpath("val2014")
+    coco_json = coco_dir.joinpath("annotations", "captions_val2014.json")
+    coco_data_out = coco_dir.joinpath("filtered_val")
+    coco_csv_out = coco_dir.joinpath("filtered_val.csv")
+    create_coco_subset(
+        coco_json, coco_data_dir, coco_data_out, coco_csv_out, desired_size=desired_size
+    )
 
-    # stylegan_dir = data_dir.joinpath("easy_to_spot_dataset", "stylegan2")
-    # stylegan_data_out = data_dir.joinpath("StyleGAN2", "filtered_images")
-    # create_subset_from_structure(stylegan_dir, stylegan_data_out, desired_size=desired_size, class_subfolder="1_fake")
+    stylegan_dir = data_dir.joinpath("easy_to_spot_dataset", "stylegan2")
+    stylegan_data_out = data_dir.joinpath("StyleGAN2", "filtered_images")
+    create_subset_from_structure(
+        stylegan_dir,
+        stylegan_data_out,
+        desired_size=desired_size,
+        class_subfolder="1_fake",
+    )
 
-    # vqgan_dir = data_dir.joinpath("VQGAN")
-    # vqgan_data_dir = vqgan_dir.joinpath("cin_k600_p1.0_a0.05_fid5.20")
-    # vqgan_data_out = vqgan_dir.joinpath("filtered_images")
-    # create_subset_from_structure(vqgan_data_dir, vqgan_data_out, desired_size=desired_size)
+    vqgan_dir = data_dir.joinpath("VQGAN")
+    vqgan_data_dir = vqgan_dir.joinpath("cin_k600_p1.0_a0.05_fid5.20")
+    vqgan_data_out = vqgan_dir.joinpath("filtered_images")
+    create_subset_from_structure(
+        vqgan_data_dir, vqgan_data_out, desired_size=desired_size
+    )
 
     hdr_dir = data_dir.joinpath("HDR")
     hdr_data_dir = hdr_dir.joinpath("full")
@@ -625,6 +652,13 @@ def main():
         desired_size=desired_size,
         class_subfolder="NAT/SDR*",
         negative_subfolders=["SHAKING"],
+    )
+
+    # Extract Dall-3 images from parquet file
+    dalle_3_dir = data_dir.joinpath("dalle-3-dataset", "data")
+    dalle_3_out = data_dir.joinpath("dalle-3-dataset", "data", "images")
+    extract_images_from_parquet(
+        dalle_3_dir, dalle_3_out
     )
 
 

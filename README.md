@@ -114,7 +114,7 @@ are hard-coded in [detection.py](detection.py) and paired with a correct label, 
 | [StyleGAN2](https://github.com/peterwang512/CNNDetection) (CNNDetection)                                                                                                         | Fake  |
 | [VQGAN](https://github.com/CompVis/taming-transformers) (Taming Transformers)                                                                                                    | Fake  |
 | [GANs and DMs](https://github.com/grip-unina/DMimageDetection) (DMimageDetection)                                                                                                | Fake  |
-
+| [Dalle-3](https://huggingface.co/datasets/laion/dalle-3-dataset) (Dall-3 dataset)                                                                                                | Fake  |
 </details>
 
 

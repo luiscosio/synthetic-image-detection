@@ -100,6 +100,7 @@ DATASETS: Dict[str, DatasetTuple] = {
     "VQGAN": DatasetTuple(DATA.joinpath("VQGAN", "filtered_images"), 1),
     "Craiyon": DatasetTuple(DATA.joinpath("Craiyon"), 1),
     "DALLE2": DatasetTuple(DATA.joinpath("DALLE2", "DMimageDetection"), 1),
+    "DALLE3": DatasetTuple(DATA.joinpath("dalle-3-dataset", "images"), 1),
 }
 
 
