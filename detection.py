@@ -71,7 +71,7 @@ DETECTORS: Dict[str, DetectorTuple] = {
 
 DATA = Path("data")
 DATASETS: Dict[str, DatasetTuple] = {
-    "fast": DatasetTuple(DATA.joinpath("fast"), 1),
+    "fast": DatasetTuple(DATA.joinpath("fast"), 1), #DONE
     "MSCOCO2014_val2014": DatasetTuple(
         DATA.joinpath("MSCOCO2014", "val2014"), 0
     ),  # DONE
@@ -97,10 +97,10 @@ DATASETS: Dict[str, DatasetTuple] = {
     "StyleGAN2": DatasetTuple(DATA.joinpath("StyleGAN2", "filtered_images"), 1),
     "StyleGAN2r": DatasetTuple(DATA.joinpath("StyleGAN2", "all_real"), 0),
     "StyleGAN2f": DatasetTuple(DATA.joinpath("StyleGAN2", "all_fake"), 1),
-    "VQGAN": DatasetTuple(DATA.joinpath("VQGAN", "filtered_images"), 1),
+    "VQGAN": DatasetTuple(DATA.joinpath("VQGAN", "filtered_images"), 1), # DONE
     "Craiyon": DatasetTuple(DATA.joinpath("Craiyon"), 1),
-    "DALLE2": DatasetTuple(DATA.joinpath("DALLE2", "DMimageDetection"), 1),
-    "DALLE3": DatasetTuple(DATA.joinpath("dalle-3-dataset", "images"), 1),
+    "DALLE2": DatasetTuple(DATA.joinpath("DALLE2", "DMimageDetection"), 1), # DONE
+    "DALLE3": DatasetTuple(DATA.joinpath("dalle-3-dataset", "images"), 1), # DONE
 }
 
 
@@ -191,7 +191,7 @@ def start_detection(
     if data_dir is None:
         if dataset_id is None and csv_path is None:
             raise ValueError(
-                f"Dataset ID (-ds) needs to be given if dataset directory and CSV output file are not specified"
+                "Dataset ID (-ds) needs to be given if dataset directory and CSV output file are not specified"
             )
         if dataset_id in DATASETS.keys():
             data_dir, label = DATASETS[dataset_id]
@@ -222,7 +222,7 @@ def start_detection(
             )
     elif detector_weights is None:
         raise ValueError(
-            f"Detector weights path (-dw) needs to be specified when the detector class is given"
+            "Detector weights path (-dw) needs to be specified when the detector class is given"
         )
     else:
         detector = load_detector_from_args(detector_class, detector_weights, device)
@@ -258,7 +258,7 @@ def start_detection(
         csv_path = Path("csvs", f"{dataset_id}{csv_subname}.csv")
 
     if not csv_path.suffix.lower() == ".csv":
-        raise ValueError(f"Output file should be a CSV file")
+        raise ValueError("Output file should be a CSV file")
 
     csv_print = (
         f", creating a CSV in {csv_path.absolute()}" if not csv_path.exists() else ""

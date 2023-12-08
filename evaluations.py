@@ -6,15 +6,22 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from PIL import Image
-from sklearn.metrics import average_precision_score, precision_recall_curve, roc_auc_score, roc_curve
+from sklearn.metrics import (
+    average_precision_score,
+    precision_recall_curve,
+    roc_auc_score,
+    roc_curve,
+)
 from tqdm import tqdm
 from transformers import CLIPModel, CLIPProcessor
 
 
-def get_detector_values_and_truths(csv_paths: List[Path],
-                                   detector_id: str,
-                                   value_type: Literal["labels", "scores"],
-                                   sep: str = ",") -> (List[float], List[int]):
+def get_detector_values_and_truths(
+    csv_paths: List[Path],
+    detector_id: str,
+    value_type: Literal["labels", "scores"],
+    sep: str = ",",
+) -> (List[float], List[int]):
     """
     Get the values and ground truth labels from a CSV file for a detector.
     The value can refer to a predicted label or a float output by the detector.
@@ -38,11 +45,13 @@ def get_detector_values_and_truths(csv_paths: List[Path],
     return values, gt
 
 
-def calculate_detector_accuracies(csv_path: Union[Path, List[Path]],
-                                  detector_id: str,
-                                  threshold: Optional[float] = None,
-                                  csv_filter: Optional[str] = None,
-                                  sep: Union[str, List[str]] = ",") -> Dict[str, float]:
+def calculate_detector_accuracies(
+    csv_path: Union[Path, List[Path]],
+    detector_id: str,
+    threshold: Optional[float] = None,
+    csv_filter: Optional[str] = None,
+    sep: Union[str, List[str]] = ",",
+) -> Dict[str, float]:
     """
     Calculate the separate accuracies for a detector from the CSV dataset result files.
     The input path can be either a directory with CSV result files, a single CSV file, or a list of them.
@@ -85,7 +94,11 @@ def calculate_detector_accuracies(csv_path: Union[Path, List[Path]],
             continue
 
         labels = np.array(df["label"].to_list())
-        values = df[detector_id + "_labels"] if threshold is None else df[detector_id + "_scores"]
+        values = (
+            df[detector_id + "_labels"]
+            if threshold is None
+            else df[detector_id + "_scores"]
+        )
         values = np.array(values.to_list())
         if threshold is not None:
             values = values >= threshold
@@ -95,10 +108,12 @@ def calculate_detector_accuracies(csv_path: Union[Path, List[Path]],
     return accuracies
 
 
-def calculate_dataset_accuracies(csv_path: Path,
-                                 threshold: Optional[float] = None,
-                                 specific_detector: Optional[str] = None,
-                                 sep: str = ",") -> Dict[str, float]:
+def calculate_dataset_accuracies(
+    csv_path: Path,
+    threshold: Optional[float] = None,
+    specific_detector: Optional[str] = None,
+    sep: str = ",",
+) -> Dict[str, float]:
     """
     Calculate the accuracies from the results of detectors on a CSV file for a dataset.
     By default, the labels column is used, but a custom threshold can be given to use the scores column.
@@ -121,13 +136,17 @@ def calculate_dataset_accuracies(csv_path: Path,
         if specific_detector in detectors:
             detectors = [specific_detector]
         else:
-            print(f"{specific_detector} not found in {csv_path.name} dataset, no accuracies calculated")
+            print(
+                f"{specific_detector} not found in {csv_path.name} dataset, no accuracies calculated"
+            )
             return dict()
 
     labels = np.array(df["label"].to_list())
 
     for detector in detectors:
-        values = df[detector + "_labels"] if threshold is None else df[detector + "_scores"]
+        values = (
+            df[detector + "_labels"] if threshold is None else df[detector + "_scores"]
+        )
         values = np.array(values.to_list())
         if threshold is not None:
             values = values >= threshold
@@ -136,10 +155,12 @@ def calculate_dataset_accuracies(csv_path: Path,
     return accuracies
 
 
-def print_dataset_accuracies(csv_path: Path,
-                             threshold: Optional[float] = None,
-                             specific_detector: Optional[str] = None,
-                             sep: str = ",", ) -> None:
+def print_dataset_accuracies(
+    csv_path: Path,
+    threshold: Optional[float] = None,
+    specific_detector: Optional[str] = None,
+    sep: str = ",",
+) -> None:
     """
     Print the accuracies from the results of detectors on a CSV file for a dataset.
     By default, the labels column is used, but a custom threshold can be given to use the scores column.
@@ -151,18 +172,26 @@ def print_dataset_accuracies(csv_path: Path,
         specific_detector: Optional detector ID to filter only its results
         sep: Separator for the CSV file
     """
-    accuracies = calculate_dataset_accuracies(csv_path, threshold, specific_detector, sep)
-    postfix = "using the _labels column" if threshold is None else f"with threshold {threshold}"
+    accuracies = calculate_dataset_accuracies(
+        csv_path, threshold, specific_detector, sep
+    )
+    postfix = (
+        "using the _labels column"
+        if threshold is None
+        else f"with threshold {threshold}"
+    )
     print(f"\nAccuracies on the {csv_path.name} dataset {postfix}")
     for k, v in accuracies.items():
         print(f"{k}: {v}")
 
 
-def print_detector_accuracies(csv_path: Union[Path, List[Path]],
-                              detector_id: str,
-                              threshold: Optional[float] = None,
-                              csv_filter: Optional[str] = None,
-                              sep: Union[str, List[str]] = ",") -> None:
+def print_detector_accuracies(
+    csv_path: Union[Path, List[Path]],
+    detector_id: str,
+    threshold: Optional[float] = None,
+    csv_filter: Optional[str] = None,
+    sep: Union[str, List[str]] = ",",
+) -> None:
     """
     Print the separate accuracies for a detector from the CSV dataset result files.
     The input path can be either a directory with CSV result files, a single CSV file, or a list of them.
@@ -176,7 +205,9 @@ def print_detector_accuracies(csv_path: Union[Path, List[Path]],
         sep: Separator for CSV files, or a list of them if they differ
     """
     try:
-        accuracies = calculate_detector_accuracies(csv_path, detector_id, threshold, csv_filter, sep)
+        accuracies = calculate_detector_accuracies(
+            csv_path, detector_id, threshold, csv_filter, sep
+        )
     except ValueError as e:
         print(e)
         return
@@ -185,18 +216,24 @@ def print_detector_accuracies(csv_path: Union[Path, List[Path]],
         print(f"No results found for {detector_id} on the given datasets")
         return
 
-    postfix = "using the _labels column" if threshold is None else f"with threshold {threshold}"
+    postfix = (
+        "using the _labels column"
+        if threshold is None
+        else f"with threshold {threshold}"
+    )
     postfix += f' and "{csv_filter}" CSV filter' if csv_filter else ""
     print(f"\nAccuracies for {detector_id} {postfix}")
     for k, v in accuracies.items():
         print(f"{k}: {v}")
 
 
-def print_latex_accuracy_table(datasets: Dict[str, Path],
-                               detectors: Dict[str, str],
-                               thresholds: Optional[List[float]] = None,
-                               variations: Optional[List[str]] = None,
-                               sep: str = ",") -> None:
+def print_latex_accuracy_table(
+    datasets: Dict[str, Path],
+    detectors: Dict[str, str],
+    thresholds: Optional[List[float]] = None,
+    variations: Optional[List[str]] = None,
+    sep: str = ",",
+) -> None:
     """
     Print a LaTeX table contents with the accuracies of given detectors on given datasets.
     Each given dataset is expected to have results for each given detector.
@@ -252,14 +289,18 @@ def print_latex_accuracy_table(datasets: Dict[str, Path],
             if isinstance(data_paths, Path):
                 data_paths = [data_paths]
             for data_path in data_paths:
-                accs = calculate_dataset_accuracies(data_path, thresholds[idx], detector_id, sep)
+                accs = calculate_dataset_accuracies(
+                    data_path, thresholds[idx], detector_id, sep
+                )
                 table += f"& {accs[detector_id]}".ljust(10)
         table += "\\\\"
 
     print(table)
 
 
-def calculate_balanced_threshold_from_roc(csv_paths: List[Path], detector_id: str, sep: str = ",") -> float:
+def calculate_balanced_threshold_from_roc(
+    csv_paths: List[Path], detector_id: str, sep: str = ","
+) -> float:
     """
     Calculate a threshold for accuracy from a receiver operating characteristics curve.
 
@@ -271,12 +312,16 @@ def calculate_balanced_threshold_from_roc(csv_paths: List[Path], detector_id: st
     Returns:
         Balanced threshold from the ROC curve
     """
-    scores, gt = get_detector_values_and_truths(csv_paths, detector_id, "scores", sep=sep)
+    scores, gt = get_detector_values_and_truths(
+        csv_paths, detector_id, "scores", sep=sep
+    )
     fpr, tpr, thresholds = roc_curve(gt, scores)
     return thresholds[np.argmax(tpr - fpr)]
 
 
-def get_balanced_thresholds(csv_paths: List[Path], detectors: List[str], verbose: bool = False):
+def get_balanced_thresholds(
+    csv_paths: List[Path], detectors: List[str], verbose: bool = False
+):
     """
     Get the balanced thresholds for each detector on the given CSV datasets.
 
@@ -298,7 +343,9 @@ def get_balanced_thresholds(csv_paths: List[Path], detectors: List[str], verbose
     return thresholds
 
 
-def calculate_detector_auc(csv_paths: List[Path], detector_id: str, sep: str = ",") -> float:
+def calculate_detector_auc(
+    csv_paths: List[Path], detector_id: str, sep: str = ","
+) -> float:
     """
     Calculate the total AUC of a detector on given datasets. The CSV files are assumed to contain
     a column with the detector's scores.
@@ -311,11 +358,15 @@ def calculate_detector_auc(csv_paths: List[Path], detector_id: str, sep: str = "
     Returns:
         Total AUC of the detector on the datasets
     """
-    scores, gt = get_detector_values_and_truths(csv_paths, detector_id, "scores", sep=sep)
+    scores, gt = get_detector_values_and_truths(
+        csv_paths, detector_id, "scores", sep=sep
+    )
     return roc_auc_score(gt, scores)
 
 
-def calculate_detector_average_precision(csv_paths: List[Path], detector_id: str, sep: str = ",") -> float:
+def calculate_detector_average_precision(
+    csv_paths: List[Path], detector_id: str, sep: str = ","
+) -> float:
     """
     Calculate the total average precision of a detector on given datasets. The CSV files are assumed to contain
     a column with the detector's scores.
@@ -328,11 +379,15 @@ def calculate_detector_average_precision(csv_paths: List[Path], detector_id: str
     Returns:
         Total average precision of the detector on the datasets
     """
-    scores, gt = get_detector_values_and_truths(csv_paths, detector_id, "scores", sep=sep)
+    scores, gt = get_detector_values_and_truths(
+        csv_paths, detector_id, "scores", sep=sep
+    )
     return average_precision_score(gt, scores)
 
 
-def plot_auc_and_ap(csv_paths: List[Path], detector_id: str, sep: str = ",", **kwargs) -> None:
+def plot_auc_and_ap(
+    csv_paths: List[Path], detector_id: str, sep: str = ",", **kwargs
+) -> None:
     """
     Plot the ROC and RP curves and their areas under the curves for a detector on given datasets.
 
@@ -341,9 +396,11 @@ def plot_auc_and_ap(csv_paths: List[Path], detector_id: str, sep: str = ",", **k
         detector_id: ID of the detector
         sep: Separator for the CSV file
     """
-    scores, gt = get_detector_values_and_truths(csv_paths, detector_id, "scores", sep=sep)
+    scores, gt = get_detector_values_and_truths(
+        csv_paths, detector_id, "scores", sep=sep
+    )
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.5, 6))
-    plt.rcParams.update({'font.size': 12})
+    plt.rcParams.update({"font.size": 12})
 
     # ROC curve
     fpr, tpr, _ = roc_curve(gt, scores)
@@ -406,7 +463,9 @@ def calculate_clip_score(prompts: List[str], image_paths: List[Path]) -> float:
     return sum(scores) / len(scores)
 
 
-def calculate_clip_score_from_csv(csv_path: Path, image_dir: Path, column: str = "prompt", sep: str = ",") -> float:
+def calculate_clip_score_from_csv(
+    csv_path: Path, image_dir: Path, column: str = "prompt", sep: str = ","
+) -> float:
     """
     Calculate the CLIP score for a dataset, where prompts are in a CSV and images in a directory.
 
@@ -425,7 +484,9 @@ def calculate_clip_score_from_csv(csv_path: Path, image_dir: Path, column: str =
     return calculate_clip_score(prompts, image_paths)
 
 
-def print_score_differences(csv_path: Path, detector_1: str, detector_2: str, sep: str = ",") -> None:
+def print_score_differences(
+    csv_path: Path, detector_1: str, detector_2: str, sep: str = ","
+) -> None:
     """
     Print statistics for the difference in scores between two different detectors for the same CSV dataset.
 
@@ -439,22 +500,26 @@ def print_score_differences(csv_path: Path, detector_1: str, detector_2: str, se
     scores_1 = np.array(df[f"{detector_1}_scores"].to_list())
     scores_2 = np.array(df[f"{detector_2}_scores"].to_list())
     diff = np.abs(scores_1 - scores_2)
-    print(f"Differences between {detector_1} and {detector_2} scores for {csv_path.name}"
-          f"\nmean: {np.mean(diff)}\nstd: {np.std(diff)}\nmax: {np.max(diff)}")
+    print(
+        f"Differences between {detector_1} and {detector_2} scores for {csv_path.name}"
+        f"\nmean: {np.mean(diff)}\nstd: {np.std(diff)}\nmax: {np.max(diff)}"
+    )
 
 
 def start_aucap(**kwargs):
     plot_auc_and_ap(**kwargs)
 
 
-def start_acc(csv_paths,
-              detector_ids,
-              thresholds,
-              balanced_paths,
-              variations,
-              csv_filter,
-              sep,
-              **kwargs):
+def start_acc(
+    csv_paths,
+    detector_ids,
+    thresholds,
+    balanced_paths,
+    variations,
+    csv_filter,
+    sep,
+    **kwargs,
+):
     if len(csv_paths) == 1 and csv_paths[0].is_dir():
         csv_paths = list(csv_paths[0].glob("*.csv"))
 
@@ -475,83 +540,154 @@ def start_acc(csv_paths,
 
     if not detector_ids:
         for csv_path in csv_paths:
-            print_dataset_accuracies(csv_path=csv_path, threshold=None, specific_detector=None, sep=sep)
+            print_dataset_accuracies(
+                csv_path=csv_path, threshold=None, specific_detector=None, sep=sep
+            )
 
     else:
         if balanced_paths:
-            thresholds = get_balanced_thresholds(balanced_paths, detector_ids, verbose=False)
+            thresholds = get_balanced_thresholds(
+                balanced_paths, detector_ids, verbose=False
+            )
         if thresholds is None:
             thresholds = [None] * len(detector_ids)
         elif len(thresholds) == 1:
             thresholds = thresholds * len(detector_ids)
 
         for detector_id, th in zip(detector_ids, thresholds):
-            print_detector_accuracies(csv_path=csv_paths, detector_id=detector_id,
-                                      threshold=th, csv_filter=None, sep=sep)
+            print_detector_accuracies(
+                csv_path=csv_paths,
+                detector_id=detector_id,
+                threshold=th,
+                csv_filter=None,
+                sep=sep,
+            )
 
 
 def main():
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-                                     allow_abbrev=False,
-                                     description="")
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        allow_abbrev=False,
+        description="",
+    )
     subparsers = parser.add_subparsers(title="subcommands")
     common_parser = argparse.ArgumentParser(add_help=False)
 
-    common_parser.add_argument("--separator", "-s", type=str, default=",", nargs="+", dest="sep",
-                               help="Separator for the CSV file(s). If only one is given, each CSV file is "
-                                    "expected to use the same separator. Otherwise, the number of separators should "
-                                    "match the number of given CSV files.")
+    common_parser.add_argument(
+        "--separator",
+        "-s",
+        type=str,
+        default=",",
+        nargs="+",
+        dest="sep",
+        help="Separator for the CSV file(s). If only one is given, each CSV file is "
+        "expected to use the same separator. Otherwise, the number of separators should "
+        "match the number of given CSV files.",
+    )
 
     # Parser for plotting AUC and AP
-    parser_aucap = subparsers.add_parser("aucap", parents=[common_parser],
-                                         help="Plot the AUC and AP of a detector for multiple datasets. "
-                                              "Both synthetic and real image labels need to be present in the "
-                                              "final input data.")
+    parser_aucap = subparsers.add_parser(
+        "aucap",
+        parents=[common_parser],
+        help="Plot the AUC and AP of a detector for multiple datasets. "
+        "Both synthetic and real image labels need to be present in the "
+        "final input data.",
+    )
     parser_aucap.set_defaults(func=start_aucap)
 
-    parser_aucap.add_argument("--input", "-i", type=Path, nargs="+", dest="csv_paths",
-                              help="Paths to CSV result files. Both synthetic and real image labels need to be "
-                                   "present")
+    parser_aucap.add_argument(
+        "--input",
+        "-i",
+        type=Path,
+        nargs="+",
+        dest="csv_paths",
+        help="Paths to CSV result files. Both synthetic and real image labels need to be "
+        "present",
+    )
 
-    parser_aucap.add_argument("--detector", "-d", type=str, required=True, dest="detector_id",
-                              help="ID of the evaluatable detector")
+    parser_aucap.add_argument(
+        "--detector",
+        "-d",
+        type=str,
+        required=True,
+        dest="detector_id",
+        help="ID of the evaluate detector",
+    )
 
-    # Parser for printing accuraciees
-    parser_acc = subparsers.add_parser("acc", parents=[common_parser],
-                                       help="Print accuracies depending on the input arguments."
-                                            "If no detector IDs are given, all the detectors found in "
-                                            "the given files are used."
-                                            "The input path(s) for the results can be a list of files, or "
-                                            "their shared directory.")
+    # Parser for printing accuracies
+    parser_acc = subparsers.add_parser(
+        "acc",
+        parents=[common_parser],
+        help="Print accuracies depending on the input arguments."
+        "If no detector IDs are given, all the detectors found in "
+        "the given files are used."
+        "The input path(s) for the results can be a list of files, or "
+        "their shared directory.",
+    )
     parser_acc.set_defaults(func=start_acc)
 
-    parser_acc.add_argument("--input", "-i", type=Path, nargs="+", dest="csv_paths",
-                            help="Path(s) to CSV result file(s) or a directory containing them")
+    parser_acc.add_argument(
+        "--input",
+        "-i",
+        type=Path,
+        nargs="+",
+        dest="csv_paths",
+        help="Path(s) to CSV result file(s) or a directory containing them",
+    )
 
-    parser_acc.add_argument("--detectors", "-d", type=str, nargs="*", dest="detector_ids",
-                            help="IDs of the evaluatable detectors."
-                                 "If none are given, all the ones found in the given files are used")
+    parser_acc.add_argument(
+        "--detectors",
+        "-d",
+        type=str,
+        nargs="*",
+        dest="detector_ids",
+        help="IDs of the evaluatable detectors."
+        "If none are given, all the ones found in the given files are used",
+    )
 
-    parser_acc.add_argument("--thresholds", "-th", type=float, nargs="*", dest="thresholds",
-                            help="Custom decision thresholds for each given detector."
-                                 "If not given, the label column is used (usually th of 0.5) instead of the score "
-                                 "column. If only one is given, it is used for all the detectors."
-                                 "Ignored if balanced-paths argument is given or detector IDs are not given")
+    parser_acc.add_argument(
+        "--thresholds",
+        "-th",
+        type=float,
+        nargs="*",
+        dest="thresholds",
+        help="Custom decision thresholds for each given detector."
+        "If not given, the label column is used (usually th of 0.5) instead of the score "
+        "column. If only one is given, it is used for all the detectors."
+        "Ignored if balanced-paths argument is given or detector IDs are not given",
+    )
 
-    parser_acc.add_argument("--balanced-paths", "-bp", type=Path, nargs="*", dest="balanced_paths",
-                            help="Use dataset(s) with both real and synthetic images to calculate balanced "
-                                 "thresholds for each detector by using the ROC curve. Each given detector "
-                                 "needs to have results for the datasets given in this argument.")
+    parser_acc.add_argument(
+        "--balanced-paths",
+        "-bp",
+        type=Path,
+        nargs="*",
+        dest="balanced_paths",
+        help="Use dataset(s) with both real and synthetic images to calculate balanced "
+        "thresholds for each detector by using the ROC curve. Each given detector "
+        "needs to have results for the datasets given in this argument.",
+    )
 
-    parser_acc.add_argument("--variations", "-v", type=str, nargs="*", dest="variations",
-                            help="Postfix(es) for the input result files. "
-                                 "Giving variations: compression60 compression90 "
-                                 "results in each input file having the form filename_compression60.csv "
-                                 "and filename_compression60.csv, for which the evaluations are then performed. "
-                                 "Used to reduce the amount of repetitive writing for data augmented results")
+    parser_acc.add_argument(
+        "--variations",
+        "-v",
+        type=str,
+        nargs="*",
+        dest="variations",
+        help="Postfix(es) for the input result files. "
+        "Giving variations: compression60 compression90 "
+        "results in each input file having the form filename_compression60.csv "
+        "and filename_compression60.csv, for which the evaluations are then performed. "
+        "Used to reduce the amount of repetitive writing for data augmented results",
+    )
 
-    parser_acc.add_argument("--csv_filter", "-cf", type=str, dest="csv_filter",
-                            help="Only the CSV files with the given pattern in their names are included")
+    parser_acc.add_argument(
+        "--csv_filter",
+        "-cf",
+        type=str,
+        dest="csv_filter",
+        help="Only the CSV files with the given pattern in their names are included",
+    )
 
     args = parser.parse_args()
     args.func(**vars(args))
