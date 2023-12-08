@@ -636,12 +636,12 @@ def main():
     #     class_subfolder="1_fake",
     # )
 
-    vqgan_dir = data_dir.joinpath("VQGAN")
-    vqgan_data_dir = vqgan_dir.joinpath("cin_k600_p1.0_a0.05_fid5.20")
-    vqgan_data_out = vqgan_dir.joinpath("filtered_images")
-    create_subset_from_structure(
-        vqgan_data_dir, vqgan_data_out, desired_size=desired_size
-    )
+    # vqgan_dir = data_dir.joinpath("VQGAN")
+    # vqgan_data_dir = vqgan_dir.joinpath("cin_k600_p1.0_a0.05_fid5.20")
+    # vqgan_data_out = vqgan_dir.joinpath("filtered_images")
+    # create_subset_from_structure(
+    #     vqgan_data_dir, vqgan_data_out, desired_size=desired_size
+    # )
 
     # hdr_dir = data_dir.joinpath("HDR")
     # hdr_data_dir = hdr_dir.joinpath("full")
@@ -661,6 +661,12 @@ def main():
     #     dalle_3_dir, dalle_3_out
     # )
 
+    dalle_3_dir = data_dir.joinpath("dalle-3-dataset", "images")
+    print(dalle_3_dir)
+    dalle_3_out = data_dir.joinpath("dalle-3-dataset", "filtered_images")
+    create_subset_from_structure(
+        dalle_3_dir, dalle_3_out, desired_size=desired_size
+    )
 
 if __name__ == "__main__":
     main()
